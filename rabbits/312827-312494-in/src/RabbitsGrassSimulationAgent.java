@@ -1,3 +1,5 @@
+import java.awt.Color;
+
 import uchicago.src.sim.gui.Drawable;
 import uchicago.src.sim.gui.SimGraphics;
 
@@ -13,26 +15,56 @@ public class RabbitsGrassSimulationAgent implements Drawable {
 	private int x;
 	private int y;
 	private int energy;
+	private static int NextID = 1;
+	private int ID;
 
 	public RabbitsGrassSimulationAgent(int energyInit){
 		x = -1;
 		y = -1;
 		energy = energyInit;
+		ID = NextID;
+		NextID++;
 	}
 
-	public void draw(SimGraphics arg0) {
-		// TODO Auto-generated method stub
-
+	public void draw(SimGraphics G) {
+		if(energy >= 4){
+			G.drawFastRoundRect(Color.blue);
+		} else {
+			G.drawFastRoundRect(Color.red);
+		}
 	}
 
 	public int getX() {
-		// TODO Auto-generated method stub
-		return 0;
+		return x;
 	}
 
 	public int getY() {
-		// TODO Auto-generated method stub
-		return 0;
+		return y;
 	}
 
+	public void setXY(int newX, int newY){
+		x = newX;
+		y = newY;
+	}
+
+	public String getID(){
+		return "A-" + ID;
+	}
+
+	public int getEnergy(){
+		return energy;
+	}
+
+	public void report(){
+		System.out.println(getID() +
+				" at (" +
+				x + ", " + y +
+				") has " +
+				getEnergy() + " energy");
+	}
+
+	public void step(){
+	    energy--;
+	}
+	
 }

@@ -1,8 +1,11 @@
+import uchicago.src.sim.engine.BasicAction;
 import uchicago.src.sim.engine.Schedule;
 import uchicago.src.sim.engine.SimModelImpl;
 import uchicago.src.sim.gui.ColorMap;
 import uchicago.src.sim.gui.DisplaySurface;
+import uchicago.src.sim.gui.Object2DDisplay;
 import uchicago.src.sim.gui.Value2DDisplay;
+import uchicago.src.sim.util.SimUtilities;
 import uchicago.src.sim.engine.SimInit;
 import java.awt.Color;
 import java.util.ArrayList;
@@ -60,9 +63,34 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		for(int i = 0; i < numInitRabbits; i++){
 			addNewAgent();
 		}
+		for(int i = 0; i < agentList.size(); i++){
+			RabbitsGrassSimulationAgent rga = (RabbitsGrassSimulationAgent)agentList.get(i);
+			rga.report();
+		}
 	}
 
 	public void buildSchedule(){
+		class RabbitsGrassStep extends BasicAction {
+			public void execute() {
+				SimUtilities.shuffle(agentList);
+				for(int i =0; i < agentList.size(); i++){
+					RabbitsGrassSimulationAgent rga = (RabbitsGrassSimulationAgent)agentList.get(i);
+					rga.step();
+				}
+				
+				displaySurf.updateDisplay();
+			}
+		}
+
+		schedule.scheduleActionBeginning(0, new RabbitsGrassStep());
+
+		class RabbitsGrassCountLiving extends BasicAction {
+			public void execute(){
+				countLivingAgents();
+			}
+		}
+
+		schedule.scheduleActionAtInterval(10, new RabbitsGrassCountLiving());
 	}
 
 	public void buildDisplay(){
@@ -78,16 +106,29 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 
 		map.mapColor(0, Color.white);
 
-		Value2DDisplay displayGrass =
-				new Value2DDisplay(rgSpace.getCurrentGrassSpace(), map);
+		Value2DDisplay displayGrass = new Value2DDisplay(rgSpace.getCurrentGrassSpace(), map);
+		Object2DDisplay displayAgents = new Object2DDisplay(rgSpace.getCurrentAgentSpace());
+		displayAgents.setObjectList(agentList);
 
 		displaySurf.addDisplayable(displayGrass, "Grass");
+		displaySurf.addDisplayable(displayAgents, "Agents");
 	}
-
 
 	private void addNewAgent(){
 		RabbitsGrassSimulationAgent a = new RabbitsGrassSimulationAgent(agentInitEnergy);
 		agentList.add(a);
+		rgSpace.addAgent(a);
+	}
+
+	private int countLivingAgents(){
+		int livingAgents = 0;
+		for(int i = 0; i < agentList.size(); i++){
+			RabbitsGrassSimulationAgent cda = (RabbitsGrassSimulationAgent)agentList.get(i);
+			if(cda.getEnergy() > 0) livingAgents++;
+		}
+		System.out.println("Number of living agents is: " + livingAgents);
+
+		return livingAgents;
 	}
 
 	public String[] getInitParam() {
@@ -109,6 +150,7 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 	public void setup() {
 		rgSpace = null;
 		agentList = new ArrayList();
+		schedule = new Schedule(1);
 
 		if (displaySurf != null){
 			displaySurf.dispose();
@@ -119,6 +161,8 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 
 		registerDisplaySurface("Rabbit grass Model Window 1", displaySurf);
 	}
+
+
 
 	public int getGridSize(){
 		return gridSize;
