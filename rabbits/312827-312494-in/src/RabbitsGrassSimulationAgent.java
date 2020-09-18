@@ -12,7 +12,7 @@ public class RabbitsGrassSimulationAgent implements Drawable {
 
 	public void draw(SimGraphics arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public int getX() {
