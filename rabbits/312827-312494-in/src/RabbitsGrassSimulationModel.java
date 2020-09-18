@@ -13,7 +13,17 @@ import uchicago.src.sim.engine.SimInit;
 
 
 public class RabbitsGrassSimulationModel extends SimModelImpl {		
-
+		
+	
+		private int gridSize;
+		private int numInitRabbits;
+		private int numInitGrass;
+		private int grassGrowthRate;
+		private int birthThreshold;
+		
+		private Schedule schedule;
+		private RabbitsGrassSimulationSpace rgSpace;
+		
 		public static void main(String[] args) {
 			
 			System.out.println("Rabbit skeleton");
@@ -29,30 +39,81 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		}
 
 		public void begin() {
-			// TODO Auto-generated method stub
-			
+			buildModel();
+		    buildSchedule();
+		    buildDisplay();
+		}
+		
+		public void buildModel(){
+			rgSpace = new RabbitsGrassSimulationSpace(gridSize);
+		    rgSpace.spreadGrass(numInitGrass);
+		}
+	
+		public void buildSchedule(){
+		}
+	
+		public void buildDisplay(){
 		}
 
 		public String[] getInitParam() {
 			// TODO Auto-generated method stub
 			// Parameters to be set by users via the Repast UI slider bar
 			// Do "not" modify the parameters names provided in the skeleton code, you can add more if you want 
-			String[] params = { "GridSize", "NumInitRabbits", "NumInitGrass", "GrassGrowthRate", "BirthThreshold"};
+			String[] params = {"GridSize", "NumInitRabbits", "NumInitGrass", "GrassGrowthRate", "BirthThreshold"};
 			return params;
 		}
 
 		public String getName() {
-			// TODO Auto-generated method stub
-			return null;
+			return "Rabbits and babbits";
 		}
 
 		public Schedule getSchedule() {
-			// TODO Auto-generated method stub
-			return null;
+			return schedule;
 		}
 
 		public void setup() {
-			// TODO Auto-generated method stub
+			rgSpace = null;
 			
 		}
+		public int getGridSize(){
+		    return gridSize;
+		}
+
+		public void setGridSize(int gs){
+			  gridSize = gs;
+		}
+		
+		public int getNumInitRabbits() {
+			return numInitRabbits;
+		}
+
+		public void setNumInitRabbits(int numInitRabbits) {
+			this.numInitRabbits = numInitRabbits;
+		}
+
+		public int getNumInitGrass() {
+			return numInitGrass;
+		}
+
+		public void setNumInitGrass(int numInitGrass) {
+			this.numInitGrass = numInitGrass;
+		}
+
+		public int getGrassGrowthRate() {
+			return grassGrowthRate;
+		}
+
+		public void setGrassGrowthRate(int grassGrowthRate) {
+			this.grassGrowthRate = grassGrowthRate;
+		}
+
+		public int getBirthThreshold() {
+			return birthThreshold;
+		}
+
+		public void setBirthThreshold(int birthThreshold) {
+			this.birthThreshold = birthThreshold;
+		}
+		
+		
 }
