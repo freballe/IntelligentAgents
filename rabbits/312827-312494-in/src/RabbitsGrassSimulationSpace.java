@@ -8,6 +8,8 @@ import uchicago.src.sim.space.Object2DGrid;
 public class RabbitsGrassSimulationSpace {
 	private Object2DGrid grassSpace;
 	private Object2DGrid agentSpace;
+	private int totalRabbits = 0;
+	private int totalGrass = 0;
 
 	public RabbitsGrassSimulationSpace(int size){
 		grassSpace = new Object2DGrid(size, size);
@@ -33,6 +35,7 @@ public class RabbitsGrassSimulationSpace {
 
 			// Replace the Integer object with another one with the new value
 			grassSpace.putObjectAt(x,y,new Integer(currentValue + 1));
+			totalGrass ++;
 		}
 	}
 
@@ -58,6 +61,11 @@ public class RabbitsGrassSimulationSpace {
 	public boolean isCellOccupied(int x, int y){
 		return (agentSpace.getObjectAt(x, y) != null);
 	}
+	
+	private void putAgentAt(int x, int y, RabbitsGrassSimulationAgent agent) {
+		agentSpace.putObjectAt(x,y,agent);
+		totalRabbits++;
+	}
 
 	public boolean addAgent(RabbitsGrassSimulationAgent agent){
 		boolean retVal = false;
@@ -68,8 +76,9 @@ public class RabbitsGrassSimulationSpace {
 			int x = (int)(Math.random()*(agentSpace.getSizeX()));
 			int y = (int)(Math.random()*(agentSpace.getSizeY()));
 			if(isCellOccupied(x,y) == false){
-				agentSpace.putObjectAt(x,y,agent);
+				putAgentAt(x,y,agent);
 				agent.setXY(x,y);
+				agent.setRgSpace(this);
 				retVal = true;
 			}
 			count++;
@@ -78,4 +87,35 @@ public class RabbitsGrassSimulationSpace {
 		return retVal;
 	}
 
+	public void removeAgentAt(int x, int y){
+		totalRabbits--;
+		agentSpace.putObjectAt(x, y, null);
+	}
+
+	public int takeGrassAt(int x, int y){
+		int grass = getGrassAt(x, y);
+		grassSpace.putObjectAt(x, y, new Integer(0));
+		totalGrass -= grass;
+		return grass;
+	}
+
+	public boolean moveAgentAt(int x, int y, int newX, int newY){
+		boolean retVal = false;
+		if(!isCellOccupied(newX, newY)){
+			RabbitsGrassSimulationAgent rga = (RabbitsGrassSimulationAgent)agentSpace.getObjectAt(x, y);
+			removeAgentAt(x,y);
+			rga.setXY(newX, newY);
+			putAgentAt(newX, newY, rga);
+			retVal = true;
+		}
+		return retVal;
+	}
+
+	public double getTotalRabbits() {
+		return totalRabbits;
+	}
+
+	public double getTotalGrass() {
+		return totalGrass;
+	}
 }
