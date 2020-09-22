@@ -119,28 +119,20 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 
 		schedule.scheduleActionBeginning(0, new RabbitsGrassStep());
 
-		class RabbitsGrassCountLiving extends BasicAction {
-			public void execute(){
-				countLivingAgents();
-			}
-		}
-
-		schedule.scheduleActionAtInterval(10, new RabbitsGrassCountLiving());
-
 		class RabbitsGrassUpdateRabbitsInSpace extends BasicAction {
 			public void execute(){
 				amountOfRabbitsInSpace.step();
 			}
 		}
 
-		schedule.scheduleActionAtInterval(1, new RabbitsGrassUpdateRabbitsInSpace());
+		schedule.scheduleActionBeginning(0, new RabbitsGrassUpdateRabbitsInSpace());
 		
 		class RabbitsGrassUpdateGrassInSpace extends BasicAction {
 			public void execute(){
 				amountOfGrassInSpace.step();
 			}
 		}
-		schedule.scheduleActionAtInterval(1, new RabbitsGrassUpdateGrassInSpace());
+		schedule.scheduleActionBeginning(0, new RabbitsGrassUpdateGrassInSpace());
 	}
 
 	public void buildDisplay(){
@@ -163,8 +155,8 @@ public class RabbitsGrassSimulationModel extends SimModelImpl {
 		displaySurf.addDisplayableProbeable(displayGrass, "Grass");
 		displaySurf.addDisplayableProbeable(displayAgents, "Agents");
 
-		amountOfRabbitsInSpace.addSequence("Rabbits In Space", new rabbitsInSpace());
-		amountOfGrassInSpace.addSequence("Grass In Space", new grassInSpace());
+		amountOfRabbitsInSpace.addSequence("R", new rabbitsInSpace());
+		amountOfGrassInSpace.addSequence("G", new grassInSpace());
 	}
 
 

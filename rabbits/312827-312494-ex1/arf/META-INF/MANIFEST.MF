@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: . arf_lib/colt.jar arf_lib/repast.jar arf_lib/plot.jar
+Main-Class: MainRabbit
+
