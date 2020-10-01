@@ -20,6 +20,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 	private int numActions;
 
 	private double gamma;	// The discount factor
+	private double delta;	// The desired distance from the optimum
 	private State states[][][];	// The 3D array of all possible states, indexed by (vehicle, currCity, destCity)
 	// Since all task involve two distinct cities, the triple (v,i,i) is used to code a state where no task is available
 
@@ -28,15 +29,18 @@ public class ReactiveTemplate implements ReactiveBehavior {
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
 
 		// Reads the discount factor from the agents.xml file.
-		// If the property is not present it defaults to 0.95
-		Double discount = agent.readProperty("discount-factor", Double.class,
-				0.95);
+		// If the property is not present it defaults to 0.95.
+		Double discount = agent.readProperty("discount-factor", Double.class, 0.95);
+		// Reads the desired distance from the optimum from the agents.xml file.
+		// If the property is not present it defaults to 1.
+		Double distanceToOpt = agent.readProperty("distance-from-optimum", Double.class, 1.0);
 
 		this.agent = agent;
 		this.topo = topology;
 		this.td = td;
 		this.numActions = 0;
 		this.gamma = discount;
+		this.delta = distanceToOpt;
 
 
 		// Check that sum over j is 1 for every i
@@ -71,7 +75,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 			// If bestAction != null, we refuse the task
 			action = new Move(bestAction);
 		}
-		
+
 		// Log the task reward
 		if(availableTask != null) {
 			if(availableTask.reward != td.reward(vehicle.getCurrentCity(), availableTask.deliveryCity)) {
@@ -174,54 +178,74 @@ public class ReactiveTemplate implements ReactiveBehavior {
 	 * Implements the Value Iteration algorithm in this setting.
 	 */
 	private void learnOptimalStrategy() {
-
-		// TODO: do value iteration with eps-delta
-		for(Vehicle vehicle : agent.vehicles()) {
-			// Iterate over vehicles
-
-			for(int curr=0; curr < topo.size(); curr++) {
-				for(int dest=0; dest < topo.size(); dest++) {
-					// Iterate over states
-
-					State state = states[vehicle.id()][curr][dest];
-					double bestQLO = - Double.MAX_VALUE;	// The new V(s), initialised to -inf
-					City bestAction = null;
-
-					for(City action : state.possibleActions()) {
-						// Iterate over possible actions
-
-						double qlo = state.reward(action);	// The Q(s,a) in the slides
-
-						int nextCurr = state.getNextCity(action).id;	// All the possible next states share the same currCity
-						for(int nextDest=0; nextDest < topo.size(); nextDest++) {
-							// Iterate over possible next states
-
-							State nextState = states[vehicle.id()][nextCurr][nextDest];
-							qlo += gamma * nextState.getProb() * nextState.getValue();
-
-							// End of iteration over possible next states
+		// The threshold for the stopping criterion
+		double eps = ((1-gamma)/gamma) * delta/2;
+		System.out.printf("\nLearning started: eps = %.3f\n\n", eps);
+		
+		// The maximum absolute variation, over all states, between the values of a state before and after each iteration
+		double maxVar = eps + 1.0;	// Initialised this way just to pass the condition the first time
+		while(maxVar > eps) {
+			// Value iteration
+			
+			maxVar = 0.0;	// Initialisation for the max of positive quantities
+			for(Vehicle vehicle : agent.vehicles()) {
+				// Iterate over vehicles
+	
+				for(int curr=0; curr < topo.size(); curr++) {
+					for(int dest=0; dest < topo.size(); dest++) {
+						// Iterate over pairs of cities
+	
+						State state = states[vehicle.id()][curr][dest];
+						double bestQLO = - Double.MAX_VALUE;	// The new V(s), initialised to -inf
+						City bestAction = null;
+	
+						for(City action : state.possibleActions()) {
+							// Iterate over possible actions
+	
+							double qlo = state.reward(action);	// The Q(s,a) in the slides
+	
+							int nextCurr = state.getNextCity(action).id;	// All the possible next states share the same currCity
+							for(int nextDest=0; nextDest < topo.size(); nextDest++) {
+								// Iterate over possible next states
+	
+								State nextState = states[vehicle.id()][nextCurr][nextDest];
+								qlo += gamma * nextState.getProb() * nextState.getValue();
+	
+								// End of iteration over possible next states
+							}
+	
+							// Update bestQLO and bestAction
+							if(qlo > bestQLO) {
+								bestQLO = qlo;
+								bestAction = action;
+							}
+	
+							// End of iteration over possible actions
 						}
-
-						// Update bestQLO and bestAction
-						if(qlo > bestQLO) {
-							bestQLO = qlo;
-							bestAction = action;
+	
+						// Get variation
+						double var = Math.abs(bestQLO - state.getValue());
+						if(var > maxVar) {
+							maxVar = var;
 						}
-
-						// End of iteration over possible actions
+						
+						// Update value and bestAction in state
+						state.setValue(bestQLO);
+						state.setBestAction(bestAction);
+	
+						// End of iteration over pairs of cities
 					}
-
-					// TODO: get variation in V(s) and compare with eps
-					// Update value and bestAction in state
-					state.setValue(bestQLO);
-					state.setBestAction(bestAction);
-
-					// End of iteration over states
 				}
+	
+				// End of iteration over vehicles
 			}
-
-			// End of iteration over vehicles
+			
+			System.out.printf("Learning: maxVar = %.3f\n", maxVar);
+			
+			// End of value iteration
 		}
+		
+		System.out.println("Learnt!!\n\n");
 
 		return;
 	}
