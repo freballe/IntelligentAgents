@@ -28,10 +28,28 @@ class State {
 		this.topo = topo;
 		this.td = td;
 		
-		// TODO: initialise value and bestAction
+		// Initialise value and bestAction
+		initStrategy();
 	}
 
 
+
+	
+	/**
+	 * Initialises value and bestAction to be the best 1-step strategy.
+	 */
+	private void initStrategy() {
+		value = -Double.MAX_VALUE;	// Initialisation for the max of unbounded quantities
+		for(City action : this.possibleActions()) {
+			double rew = this.reward(action);
+			if(rew > value) {
+				value = rew;
+				bestAction = action;
+			}
+		}
+		
+		return;
+	}
 
 	public double getValue() {
 		return value;

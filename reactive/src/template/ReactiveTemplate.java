@@ -184,16 +184,20 @@ public class ReactiveTemplate implements ReactiveBehavior {
 		
 		// The maximum absolute variation, over all states, between the values of a state before and after each iteration
 		double maxVar = eps + 1.0;	// Initialised this way just to pass the condition the first time
+		// The number of iterations since the policy last changed
+		int iterSincePolicyChange = 0;
+		// The total number of iterations
+		int totalIter = 0;
 		while(maxVar > eps) {
 			// Value iteration
 			
+			iterSincePolicyChange++;
+			totalIter++;
 			maxVar = 0.0;	// Initialisation for the max of positive quantities
 			for(Vehicle vehicle : agent.vehicles()) {
-				// Iterate over vehicles
-	
 				for(int curr=0; curr < topo.size(); curr++) {
 					for(int dest=0; dest < topo.size(); dest++) {
-						// Iterate over pairs of cities
+						// Iterate over states
 	
 						State state = states[vehicle.id()][curr][dest];
 						double bestQLO = - Double.MAX_VALUE;	// The new V(s), initialised to -inf
@@ -223,21 +227,24 @@ public class ReactiveTemplate implements ReactiveBehavior {
 							// End of iteration over possible actions
 						}
 	
-						// Get variation
+						// Get value variation
 						double var = Math.abs(bestQLO - state.getValue());
 						if(var > maxVar) {
 							maxVar = var;
+						}
+						
+						// See if policy changes
+						if(bestAction != state.getBestAction()) {
+							iterSincePolicyChange = 0;
 						}
 						
 						// Update value and bestAction in state
 						state.setValue(bestQLO);
 						state.setBestAction(bestAction);
 	
-						// End of iteration over pairs of cities
+						// End of iteration over states
 					}
 				}
-	
-				// End of iteration over vehicles
 			}
 			
 			System.out.printf("Learning: maxVar = %.3f\n", maxVar);
@@ -245,7 +252,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 			// End of value iteration
 		}
 		
-		System.out.println("Learnt!!\n\n");
+		System.out.printf("Learnt in %d iterations! Policy hasn't changed in %d iterations!\n\n", totalIter, iterSincePolicyChange);
 
 		return;
 	}
