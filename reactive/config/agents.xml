@@ -10,8 +10,8 @@
 		<set discount-factor=".85"/>
 	</agent>
 	
-	<agent name="my-reactive">
-		<set class-path="bin/"/>
+	<agent name="reactive-rla">
+		<set class-path="bin/"></set>
 		<set class-name="template.MyReactive"/>
 		<set discount-factor=".5"/>
 		<set distance-from-optimum="1000"/>
