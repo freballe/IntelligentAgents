@@ -7,6 +7,12 @@
 	<agent name="reactive-random">
 		<set class-path="bin/"/>
 		<set class-name="template.ReactiveTemplate"/>
+		<set discount-factor=".85"/>
+	</agent>
+	
+	<agent name="my-reactive">
+		<set class-path="bin/"/>
+		<set class-name="template.MyReactive"/>
 		<set discount-factor=".5"/>
 		<set distance-from-optimum="1000"/>
 	</agent>
