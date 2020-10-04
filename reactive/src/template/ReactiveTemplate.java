@@ -188,6 +188,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 		int iterSincePolicyChange = 0;
 		// The total number of iterations
 		int totalIter = 0;
+		
 		while(maxVar > eps) {
 			// Value iteration
 			
@@ -252,7 +253,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 			// End of value iteration
 		}
 		
-		System.out.printf("Learnt in %d iterations! Policy hasn't changed in %d iterations!\n\n", totalIter, iterSincePolicyChange);
+		System.out.printf("\nLearnt in %d iterations! Policy hasn't changed in %d iterations!\n\n", totalIter, iterSincePolicyChange);
 
 		return;
 	}
