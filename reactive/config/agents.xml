@@ -7,14 +7,19 @@
 	<agent name="reactive-random">
 		<set class-path="bin/"/>
 		<set class-name="template.ReactiveTemplate"/>
-		<set discount-factor=".85"/>
+		<set discount-factor=".99"/>
 	</agent>
 	
 	<agent name="reactive-rla">
 		<set class-path="bin/"></set>
-		<set class-name="template.MyReactive"/>
+		<set class-name="template.MyReactive"></set>
 		<set discount-factor=".5"/>
-		<set distance-from-optimum="1000"/>
+		<set distance-from-optimum="1000"></set>
+	</agent>
+	
+	<agent name="reactive-dummy">
+		<set class-path="bin/"></set>
+		<set class-name="template.DummyReactive"></set>
 	</agent>
 	
 </agents>
