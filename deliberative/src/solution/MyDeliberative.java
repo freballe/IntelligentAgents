@@ -19,35 +19,34 @@ public class MyDeliberative implements DeliberativeBehavior {
 
 	enum Algorithm { BFS, ASTAR }
 
-	/* Environment */
+	// Environment
 	Topology topology;
-	TaskDistribution td;
 
-	/* the properties of the agent */
-	Agent agent;
-	int capacity;
-
-	/* the planning class */
+	// Determines which algorithm to use for the search
 	Algorithm algorithm;
 
+	
+	
+	/* Only used to read the algorithm preference from the .xml configuration file */
 	@Override
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
 		this.topology = topology;
-		this.td = td;
-		this.agent = agent;
 
-		// initialize the planner
-		int capacity = agent.vehicles().get(0).capacity();
+		// Read the algorithm
 		String algorithmName = agent.readProperty("algorithm", String.class, "ASTAR");
 
 		// Throws IllegalArgumentException if algorithm is unknown
 		algorithm = Algorithm.valueOf(algorithmName.toUpperCase());
 	}
+	
 
+	/* Computes the current state of the vehicle, then lets the class State do the job,
+	 * by calling either bfs() or aStar() on initialState. */
 	@Override
 	public Plan plan(Vehicle vehicle, TaskSet tasks) {
-		Plan plan;
 		State initialState = new State(tasks, vehicle, topology);
+		Plan plan;
+		
 		// Compute the plan with the selected algorithm.
 		switch (algorithm) {
 		case ASTAR:
@@ -58,17 +57,21 @@ public class MyDeliberative implements DeliberativeBehavior {
 			break;
 		default:
 			throw new AssertionError("Should not happen.");
-		}		
+		}	
+		
 		return plan;
 	}
 
+
+	/* Only logs the event: we are not interested in keeping the TaskSet carriedTasks,
+	 * as it will be available anyway in the next call to plan() as vehicle.getCurrentTasks() */
 	@Override
 	public void planCancelled(TaskSet carriedTasks) {
 		if (!carriedTasks.isEmpty()) {
-			// This cannot happen for this simple agent, but typically
-			// you will need to consider the carriedTasks when the next
-			// plan is computed.
-			System.out.println("planCancelled called with non empty carriedTasks");
+			System.out.println("planCancelled called with non-empty carriedTasks");
 		}
+		
+		return;
 	}
+
 }
