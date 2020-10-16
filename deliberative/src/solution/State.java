@@ -28,53 +28,127 @@ class State {
 	private double heuristic;
 	private Vehicle vehicle;
 
+	
+	
 	public State(TaskSet pettera, Vehicle vehicle) {
 		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera,  null, vehicle, 0);
 	}
 
-	public State(City currentCity, TaskSet groppone, TaskSet pettera, Arc father, Vehicle vehicle, double costSoFar) {
+	
+	public State(City currentCity, TaskSet groppone, TaskSet pettera, Arc father, 
+			Vehicle vehicle, double costSoFar) {
 		super();
 		this.currentCity = currentCity;
 		this.groppone = groppone;
 		this.pettera = pettera;
 		this.costSoFar = costSoFar;
 		this.vehicle = vehicle;
-		this.heuristic = 0;
 		this.father = father;
+		
+		initHeuristic();
 	}
+
 
 	public Plan getPlanSoFar() {
 		if(this.getFather() == null) {
 			return new Plan(currentCity);
 		}
+		
 		Plan plan = this.getFather().getStart().getPlanSoFar();
 		for(Action action : this.getFather().getActions()){
 			plan.append(action);
 		}
+		
 		return plan;
 	}
 
-	public Plan bfs() {
-		// TODO
-		return null;
+	
+	public boolean isGoal() {
+		return groppone.isEmpty() && pettera.isEmpty();
 	}
 
-	public Arc getFather() {
-		return father;
+	
+	public List<State> getSuccessorStates(){
+		List<State> states = new LinkedList<State>();
+		
+		for(Task task : pettera) {
+			if(task.pickupCity == currentCity && task.weight + groppone.weightSum() <= vehicle.capacity()) {
+				Arc arc = new Arc(this);
+				arc.addAction(new Pickup(task));
+				
+				State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), arc, vehicle, costSoFar);
+				end.pickupTask(task);
+				arc.setEnd(end);
+				
+				states.add(end);
+			}
+		}
+		
+		Set<City> citiesToGo = new HashSet<City>();
+		for(Task task : pettera) {
+			if(task.pickupCity != currentCity) {
+				citiesToGo.add(task.pickupCity);
+			}
+		}
+		for(Task task : groppone) {
+			citiesToGo.add(task.deliveryCity);
+		}
+		
+		for(City cityToGo : citiesToGo) {
+			Arc arc = new Arc(this);
+			
+			for(City transitCity : currentCity.pathTo(cityToGo)) {
+				arc.addAction(new Move(transitCity));
+			}
+			arc.setCost(vehicle.costPerKm() * currentCity.distanceTo(cityToGo));
+			
+			State end = new State(cityToGo, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), arc, vehicle, costSoFar+arc.getCost());
+			arc.setEnd(end);
+			
+			List<Task> delivered = end.deliveryTasks();
+			for(Task task : delivered) {
+				arc.addAction(new Delivery(task));
+			}
+			
+			states.add(end);
+		}
+
+		return states;
 	}
 
-	public void setFather(Arc father) {
-		this.father = father;
+	
+	private List<Task> deliveryTasks() {
+		List<Task> delivered = new LinkedList<Task>();
+		
+		for(Task task : groppone) {
+			if(task.deliveryCity == currentCity) {
+				delivered.add(task);
+				groppone.remove(task);
+			}
+		}
+		
+		return delivered;
 	}
 
-	public double getCostSoFar() {
-		return costSoFar;
+
+	private void pickupTask(Task task) {
+		groppone.add(task);
+		pettera.remove(task);
 	}
 
-	public void setCostSoFar(double costSoFar) {
-		this.costSoFar = costSoFar;
+	
+	// TODO
+	private void initHeuristic() {
+		// TODO Auto-generated method stub
+		this.heuristic = 0;
+	}
+	
+	
+	private double estimateTotalCost() {
+		return heuristic + costSoFar;
 	}
 
+	
 	/* Custom implementation that only takes into account the identifying fields. */
 	@Override
 	public int hashCode() {
@@ -114,55 +188,34 @@ class State {
 			return false;
 		return true;
 	}
-
-
-	public boolean isGoal() {
-		return groppone.isEmpty() && pettera.isEmpty();
+	
+	
+	public Arc getFather() {
+		return father;
 	}
 
-	List<State> getSuccessorStates(){
-		List<State> states = new LinkedList<State>();
-		for(Task task : pettera) {
-			if(task.pickupCity == currentCity && task.weight + groppone.weightSum() <= vehicle.capacity()) {
-				Arc arc = new Arc(this);
-				arc.addActionAndCost(new Pickup(task), 0);
-				State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), arc, vehicle, costSoFar);
-				end.pickupTask(task);
-				states.add(end);
-				arc.setEnd(end);
-			}
-		}
-		
-		Set<City> citiesToGo = new HashSet<City>();
-		for(Task task : pettera) {
-			if(task.pickupCity != currentCity) {
-				citiesToGo.add(task.pickupCity);
-			}
-		}
-		
-		for(Task task : groppone) {
-			citiesToGo.add(task.deliveryCity);
-		}
-		
-
-		return null;
+	
+	public void setFather(Arc father) {
+		this.father = father;
 	}
 
-	private void pickupTask(Task task) {
-		groppone.add(task);
-		pettera.remove(task);
+	
+	public double getCostSoFar() {
+		return costSoFar;
 	}
 
-	private double estimateTotalCost() {	// f
-		return heuristic + costSoFar;
+	
+	public void setCostSoFar(double costSoFar) {
+		this.costSoFar = costSoFar;
 	}
 
+	
 	static class StateComparator implements Comparator<State>{ 
 		public int compare(State s1, State s2) { 
 			if (s1.estimateTotalCost() < s2.estimateTotalCost()) 
-				return 1; 
-			else if (s1.estimateTotalCost() > s2.estimateTotalCost()) 
 				return -1; 
+			else if (s1.estimateTotalCost() > s2.estimateTotalCost()) 
+				return +1; 
 			return 0; 
 		} 
 	} 

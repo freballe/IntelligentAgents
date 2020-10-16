@@ -12,6 +12,8 @@ public class Arc {
 	
 	private List<Action> actions;
 
+	
+	
 	public Arc(State start) {
 		super();
 		this.start = start;
@@ -19,26 +21,36 @@ public class Arc {
 		this.cost = 0.0;
 	}
 
+	
 	public State getStart() {
 		return start;
 	}
 
+	
 	public State getEnd() {
 		return end;
 	}
+	
 	
 	public void setEnd(State end) {
 		this.end = end;
 	}
 
+	
 	public double getCost() {
 		return cost;
 	}
 	
-	public void addActionAndCost(Action action, double cost) {
-		actions.add(action);
-		this.cost += cost;
+	
+	public void setCost(double cost) {
+		this.cost = cost;
 	}
+
+
+	public void addAction(Action action) {
+		actions.add(action);
+	}
+	
 	
 	public List<Action> getActions() {
 		return actions;
