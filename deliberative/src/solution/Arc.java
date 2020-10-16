@@ -5,11 +5,17 @@ import java.util.List;
 
 import logist.plan.Action;
 
+
+/**
+ * Class representing an (oriented) arc between two states.
+ *
+ */
 public class Arc {
 	private State start;
 	private State end;
 	private double cost;
 	
+	// The list of elementary Actions associated to this Arc
 	private List<Action> actions;
 
 	
@@ -47,11 +53,19 @@ public class Arc {
 	}
 
 
+	/**
+	 * Adds "action" to the list of Actions.
+	 * @param action the Action to be added
+	 */
 	public void addAction(Action action) {
 		actions.add(action);
 	}
 	
 	
+	/**
+	 * Does not make a copy of its internal list of Actions.
+	 * @return the list of Actions associated to this Arc
+	 */
 	public List<Action> getActions() {
 		return actions;
 		
