@@ -49,21 +49,46 @@ class State {
 		return planSoFar;
 	}
 
+	/* Custom implementation that only takes into account the identifying fields. */
 	@Override
 	public int hashCode() {
-		return currentCity.hashCode()+groppone.hashCode()+ pettera.hashCode();
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((currentCity == null) ? 0 : currentCity.hashCode());
+		result = prime * result + ((groppone == null) ? 0 : groppone.hashCode());
+		result = prime * result + ((pettera == null) ? 0 : pettera.hashCode());
+		return result;
 	}
 
+
+	/* Custom implementation that only takes into account the identifying fields. */
 	@Override
 	public boolean equals(Object obj) {
-		if(obj==null || !(obj instanceof State)) {
-			return false;			
-		}
-
-		State s=(State) obj;
-
-		return s.currentCity.equals(this.currentCity) && s.groppone.equals(this.groppone) && s.pettera.equals(this.pettera);
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof State))
+			return false;
+		State other = (State) obj;
+		if (currentCity == null) {
+			if (other.currentCity != null)
+				return false;
+		} else if (!currentCity.equals(other.currentCity))
+			return false;
+		if (groppone == null) {
+			if (other.groppone != null)
+				return false;
+		} else if (!groppone.equals(other.groppone))
+			return false;
+		if (pettera == null) {
+			if (other.pettera != null)
+				return false;
+		} else if (!pettera.equals(other.pettera))
+			return false;
+		return true;
 	}
+
 
 	public boolean isGoal() {
 		return groppone.isEmpty() && pettera.isEmpty();
