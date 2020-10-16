@@ -23,7 +23,7 @@ class State {
 	private TaskSet groppone;
 	private TaskSet pettera;
 
-	private Arc father;
+	private Arc fatherArc;
 	private double costSoFar;
 	private double heuristic;
 	private Vehicle vehicle;
@@ -31,7 +31,7 @@ class State {
 	
 	
 	public State(TaskSet pettera, Vehicle vehicle) {
-		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera,  null, vehicle, 0);
+		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera, null, vehicle, 0);
 	}
 
 	
@@ -43,19 +43,19 @@ class State {
 		this.pettera = pettera;
 		this.costSoFar = costSoFar;
 		this.vehicle = vehicle;
-		this.father = father;
+		this.fatherArc = father;
 		
 		initHeuristic();
 	}
 
 
 	public Plan getPlanSoFar() {
-		if(this.getFather() == null) {
+		if(this.getFatherArc() == null) {
 			return new Plan(currentCity);
 		}
 		
-		Plan plan = this.getFather().getStart().getPlanSoFar();
-		for(Action action : this.getFather().getActions()){
+		Plan plan = this.getFatherArc().getStart().getPlanSoFar();
+		for(Action action : this.getFatherArc().getActions()){
 			plan.append(action);
 		}
 		
@@ -68,7 +68,7 @@ class State {
 	}
 
 	
-	public List<State> getSuccessorStates(){
+	public List<State> getChildren(){
 		List<State> states = new LinkedList<State>();
 		
 		for(Task task : pettera) {
@@ -190,13 +190,13 @@ class State {
 	}
 	
 	
-	public Arc getFather() {
-		return father;
+	public Arc getFatherArc() {
+		return fatherArc;
 	}
 
 	
-	public void setFather(Arc father) {
-		this.father = father;
+	public void setFatherArc(Arc fatherArc) {
+		this.fatherArc = fatherArc;
 	}
 
 	
