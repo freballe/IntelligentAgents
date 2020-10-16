@@ -53,7 +53,7 @@ public class MyDeliberative implements DeliberativeBehavior {
 	@Override
 	public Plan plan(Vehicle vehicle, TaskSet tasks) {
 		Plan plan;
-		State initialState = new State(tasks, vehicle, topology);
+		State initialState = new State(tasks, vehicle);
 		// Compute the plan with the selected algorithm.
 		switch (algorithm) {
 		case ASTAR:
