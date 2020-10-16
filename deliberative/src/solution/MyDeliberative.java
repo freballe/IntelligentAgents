@@ -2,6 +2,11 @@ package solution;
 
 /* import table */
 import logist.simulation.Vehicle;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
+
 import logist.agent.Agent;
 import logist.behavior.DeliberativeBehavior;
 import logist.plan.Plan;
@@ -10,6 +15,7 @@ import logist.task.TaskDistribution;
 import logist.task.TaskSet;
 import logist.topology.Topology;
 import logist.topology.Topology.City;
+import solution.State.StateComparator;
 
 /**
  * An optimal planner for one vehicle.
@@ -51,7 +57,7 @@ public class MyDeliberative implements DeliberativeBehavior {
 		// Compute the plan with the selected algorithm.
 		switch (algorithm) {
 		case ASTAR:
-			plan = initialState.aStar();
+			plan = aStar(initialState);
 			break;
 		case BFS:
 			plan = initialState.bfs();
@@ -71,4 +77,29 @@ public class MyDeliberative implements DeliberativeBehavior {
 			System.out.println("planCancelled called with non empty carriedTasks");
 		}
 	}
+	
+	public Plan aStar(State initialState) {
+		PriorityQueue<State> Q = new PriorityQueue<State>(new State.StateComparator());
+		HashSet<State> C = new HashSet<State>();
+		Q.add(initialState);
+
+		while(true) {
+			if(Q.isEmpty()){
+				return null;
+			}
+			State n = Q.poll();
+			if(n.isGoal()) {
+				return n.getPlanSoFar();
+			}
+			if(C.contains(n)){	
+				continue;
+			}
+			// reminder: here we don't check the second condition since it can't happen that we re-visit a state with lower cost, 
+			// as long as the heuristic is consistent
+			C.add(n);
+
+			List<State> S = n.getSuccessorStates();
+			Q.addAll(S);
+		}
+	}	
 }

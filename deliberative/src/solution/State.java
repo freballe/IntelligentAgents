@@ -34,37 +34,15 @@ class State {
 		this.groppone = groppone;
 		this.pettera = pettera;
 		this.topo = topo;
-		this.planSoFar = planSoFar;
 		this.costSoFar = costSoFar;
 		this.vehicle = vehicle;
 		this.heuristic = 0;
 	}
 
-	public Plan aStar() {
-		PriorityQueue<State> Q = new PriorityQueue<State>(new StateComparator());
-		HashSet<State> C = new HashSet<State>();
-
-		Q.add(this);
-
-		while(true) {
-			if(Q.isEmpty()){
-				return null;
-			}
-			State n = Q.poll();
-			if(n.isGoal()) {
-				return n.getPlanSoFar();
-			}
-			if(C.contains(n)){	
-				continue;
-			}
-			// reminder: here we don't check the second condition since it can't happen that we re-visit a state with lower cost, 
-			// as long as the heuristic is consistent
-			C.add(n);
-
-			List<State> S = n.getSuccessorStates();
-			Q.addAll(S);
-		}
-	}	
+	Plan getPlanSoFar() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 	public Plan bfs() {
 		// TODO
@@ -87,15 +65,11 @@ class State {
 		return s.currentCity.equals(this.currentCity) && s.groppone.equals(this.groppone) && s.pettera.equals(this.pettera);
 	}
 
-	private boolean isGoal() {
+	public boolean isGoal() {
 		return groppone.isEmpty() && pettera.isEmpty();
 	}
 
-	private Plan getPlanSoFar() {
-		return planSoFar;
-	}
-
-	private List<State> getSuccessorStates(){
+	List<State> getSuccessorStates(){
 		return null;
 	}
 
@@ -103,7 +77,7 @@ class State {
 		return heuristic + costSoFar;
 	}
 
-	class StateComparator implements Comparator<State>{ 
+	static class StateComparator implements Comparator<State>{ 
 		public int compare(State s1, State s2) { 
 			if (s1.estimateTotalCost() < s2.estimateTotalCost()) 
 				return 1; 
