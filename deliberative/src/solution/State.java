@@ -144,7 +144,7 @@ class State {
 			}
 			arc.setCost(vehicle.costPerKm() * currentCity.distanceTo(cityToGo));
 			
-			// Set proper costSoFat for the new State
+			// Set proper costSoFar for the new State
 			State end = new State(cityToGo, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), arc, vehicle, costSoFar+arc.getCost());
 			arc.setEnd(end);
 			
