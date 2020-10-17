@@ -14,6 +14,7 @@ public class Arc {
 	private State start;
 	private State end;
 	private double cost;
+	private String type;
 	
 	// The list of elementary Actions associated to this Arc
 	private List<Action> actions;
@@ -28,6 +29,16 @@ public class Arc {
 	}
 
 	
+	public String getType() {
+		return type;
+	}
+
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+
 	public State getStart() {
 		return start;
 	}

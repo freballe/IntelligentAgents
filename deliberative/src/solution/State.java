@@ -102,23 +102,52 @@ class State {
 
 	/**
 	 * Computes all the children States by enumerating all the outgoing Arcs.
-	 * Arcs are either a single Pickup, or a sequence of Moves (constituting the best path
+	 * If some tasks can be delivered in currentCity, then there is only one outgoing arc,
+	 * and it is the Delivery of the task (among those that can be delivered in currentCity),
+	 * with the smallest ID.
+	 * Otherwise, arcs are either a single Pickup, or a sequence of Moves (constituting the best path
 	 * from currentCity to a city where a task is due to be delivered) followed by 
-	 * a sequence of Deliveries (delivering every possible task in the destination city), or a 
-	 * sequence of Moves (constituting the best path from currentCity to a city where a task is 
-	 * due to be picked up and no task is due to be delivered) followed by a single Pickup.
+	 * the Delivery of the task with the smallest ID among those that have to be delivered in the 
+	 * destination city, or a sequence of Moves (constituting the best path from currentCity to a city
+	 *  where a task is due to be picked up and no task is due to be delivered) followed by a single Pickup.
 	 * @return a List containing all the States reachable from this State.
 	 */
 	public List<State> getChildren(){
 		List<State> states = new LinkedList<State>();
+		Task toBeDelivered = null;
+		
+		// See if a task can be delivered in currentCity
+		toBeDelivered = smallestDeliverableTask();
+		if(toBeDelivered != null) {
+			Arc arc = new Arc(this);
+			
+			// Add the Delivery and the type to the Arc
+			arc.addAction(new Delivery(toBeDelivered));
+			arc.setType("DELIVERY(" + toBeDelivered.id + ")");
+
+			// A Delivery does not incur costs, so costSoFar is the same for the new State
+			State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
+					arc, vehicle, costSoFar, this.depth+1, algo);
+			
+			// Modify the new State, so that "task" figures as delivered
+			end.deliveryTask(toBeDelivered);
+			
+			arc.setEnd(end);
+			states.add(end);
+			// Only one outgoing Arc
+			return states;
+		}
+		
+		// Otherwise, enumerate all Arcs
 
 		// Enumerate all single-Pickup Arcs
 		for(Task task : pettera) {
 			if(task.pickupCity == currentCity && task.weight + groppone.weightSum() <= vehicle.capacity()) {
 				Arc arc = new Arc(this);
 				
-				// Add the Pickup to the Arc
+				// Add the Pickup and the type to the Arc
 				arc.addAction(new Pickup(task));
+				arc.setType("PICKUP(" + task.id + ")");
 
 				// A Pickup does not incur costs, so costSoFar is the same for the new State
 				State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
@@ -138,7 +167,7 @@ class State {
 			deliveryCities.add(task.deliveryCity);
 		}
 
-		// Enumerate all Moves-Deliveries Arcs
+		// Enumerate all Moves-Delivery Arcs
 		for(City deliveryCity : deliveryCities) {
 			Arc arc = new Arc(this);
 
@@ -148,28 +177,29 @@ class State {
 			}
 			arc.setCost(vehicle.costPerKm() * currentCity.distanceTo(deliveryCity));
 
-			// Set proper costSoFar for the new State (depth is not definitive)
+			// Set proper costSoFar and depth for the new State
 			State end = new State(deliveryCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
 					arc, vehicle, costSoFar+arc.getCost(), this.depth+1, algo);
 			
-			// Modify the new State, so that all deliverable tasks figure as delivered
-			List<Task> delivered = end.deliveryTasks();
-			// Add all Deliveries to the Arc
-			for(Task task : delivered) {
-				arc.addAction(new Delivery(task));
+			// Modify the new State, so that the smallest deliverable task figures as delivered
+			Task toDeliver = end.smallestDeliverableTask();
+			if(toDeliver == null) {
+				throw new AssertionError("toDeliver is null\n" + "Child state:\n" + end);
 			}
-			
-			// "Artificially" set depth so as to make each Delivery count as one move
-			end.setDepth(this.depth + delivered.size());
+			end.deliveryTask(toDeliver);
+			// Add the Delivery and the type to the Arc
+			arc.addAction(new Delivery(toDeliver));
+			arc.setType("MOVES(" + deliveryCity.name + ") + DELIVERY(" + toDeliver.id + ")");
 
 			arc.setEnd(end);
 			states.add(end);
 		}
 
-		// Line up all the tasks to be picked up in a city where no task is to be delivered
+		// Line up all the light tasks to be picked up in a city where no task is to be delivered
 		Set<Task> tasksToPickup = new HashSet<Task>();
 		for(Task task : pettera) {
-			if(task.pickupCity != currentCity && !deliveryCities.contains(task.pickupCity)) {
+			if(task.pickupCity != currentCity && !deliveryCities.contains(task.pickupCity) &&
+					task.weight + groppone.weightSum() <= vehicle.capacity()) {
 				tasksToPickup.add(task);
 			}
 		}
@@ -191,8 +221,9 @@ class State {
 
 			// Modify the new State, so that "task" figures as picked up
 			end.pickupTask(taskToPickup);
-			// Add the Pickup to the Arc
+			// Add the Pickup and the type to the Arc
 			arc.addAction(new Pickup(taskToPickup));
+			arc.setType("MOVES(" + pickupCity.name + ") + PICKUP(" + taskToPickup.id + ")");
 
 			arc.setEnd(end);
 			states.add(end);
@@ -203,20 +234,32 @@ class State {
 
 
 	/**
-	 * Modifies groppone and pettera, so that all deliverable tasks figure as delivered
-	 * @return the list of delivererd tasks
+	 * Returns the task with the smallest ID (among those that can be 
+	 * delivered in currentCity) 
 	 */
-	private List<Task> deliveryTasks() {
-		List<Task> delivered = new LinkedList<Task>();
-
+	private Task smallestDeliverableTask() {
+		Task deliverable = null;
+		
+		if(groppone.isEmpty()) {
+			return null;
+		}
+		
+		// Iteration is in increasing order of ID
 		for(Task task : groppone) {
 			if(task.deliveryCity == currentCity) {
-				delivered.add(task);
-				groppone.remove(task);
+				deliverable = task;
 			}
 		}
-
-		return delivered;
+		
+		return deliverable;
+	}
+	
+	
+	/**
+	 * Modifies groppone, so that "task" figures as delivered
+	 */
+	private void deliveryTask(Task task) {
+		groppone.remove(task);
 	}
 
 
@@ -353,7 +396,7 @@ class State {
 	@Override
 	public String toString() {
 		return "State [currentCity=" + currentCity.name + ", groppone=" + printTaskSet(groppone) + 
-				", pettera=" + printTaskSet(pettera) + "\ncostSoFar=" + costSoFar + ", depth=" + depth + "]";
+				", pettera=" + printTaskSet(pettera) + ", costSoFar=" + costSoFar + ", depth=" + depth + "]";
 	}
 
 
@@ -382,15 +425,11 @@ class State {
 		String s = "";
 
 		if(this.fatherArc != null) {
-			s = this.fatherArc.getStart().printPathSoFar();
+			s = this.fatherArc.getStart().printPathSoFar() + this.fatherArc.getType() + "\n";
 		}
 
 		return s + this + "\n";
 	}
-
-
-
-
 
 
 	/**
