@@ -12,6 +12,7 @@ import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
 import logist.topology.Topology.City;
+import solution.MyDeliberative.Algorithm;
 import logist.plan.Action.Pickup;
 import logist.plan.Action.Move;
 import logist.plan.Action.Delivery;
@@ -38,6 +39,7 @@ class State {
 	private int depth;			// The number of arcs traversed from the root
 	private double heuristic;	// The (under)estimated cost to any goal state
 	private Vehicle vehicle;
+	private Algorithm algo;		// Dictates the heuristic
 
 
 
@@ -45,8 +47,8 @@ class State {
 	 * Reduced constructor, called to instantiate the initial state, for which 
 	 * some parameters can be derived from the vehicle.
 	 */
-	public State(TaskSet pettera, Vehicle vehicle) {
-		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera, null, vehicle, 0.0, 0);
+	public State(TaskSet pettera, Vehicle vehicle, Algorithm algo) {
+		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera, null, vehicle, 0.0, 0, algo);
 	}
 
 
@@ -54,7 +56,7 @@ class State {
 	 * Full constructor.
 	 */
 	public State(City currentCity, TaskSet groppone, TaskSet pettera, Arc father, 
-			Vehicle vehicle, double costSoFar, int depth) {
+			Vehicle vehicle, double costSoFar, int depth, Algorithm algo) {
 		super();
 		this.currentCity = currentCity;
 		this.groppone = groppone;
@@ -63,6 +65,7 @@ class State {
 		this.vehicle = vehicle;
 		this.fatherArc = father;
 		this.depth = depth;
+		this.algo = algo;
 
 		initHeuristic();
 	}
@@ -119,7 +122,7 @@ class State {
 
 				// A Pickup does not incur costs, so costSoFar is the same for the new State
 				State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
-						arc, vehicle, costSoFar, this.depth+1);
+						arc, vehicle, costSoFar, this.depth+1, algo);
 				
 				// Modify the new State, so that "task" figures as picked up
 				end.pickupTask(task);
@@ -147,7 +150,7 @@ class State {
 
 			// Set proper costSoFar for the new State (depth is not definitive)
 			State end = new State(deliveryCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
-					arc, vehicle, costSoFar+arc.getCost(), this.depth+1);
+					arc, vehicle, costSoFar+arc.getCost(), this.depth+1, algo);
 			
 			// Modify the new State, so that all deliverable tasks figure as delivered
 			List<Task> delivered = end.deliveryTasks();
@@ -184,7 +187,7 @@ class State {
 
 			// Set proper costSoFar for the new State
 			State end = new State(pickupCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
-					arc, vehicle, costSoFar+arc.getCost(), this.depth+1);
+					arc, vehicle, costSoFar+arc.getCost(), this.depth+1, algo);
 
 			// Modify the new State, so that "task" figures as picked up
 			end.pickupTask(taskToPickup);
@@ -226,9 +229,41 @@ class State {
 	}
 
 
-	// TODO
+	/**
+	 * Sets the heuristic.
+	 * If algo is DIJKSTRA (or not ASTAR, anyway), then heuristic is set to 0.
+	 * Else the heuristic is set to the maximum, over all tasks, of the cost of the optimal
+	 * path to the delivery city (if the task is picked up but not delivered) or the cost
+	 * of the optimal path to the pickup city and, from there, to the delivery city (if the
+	 * task is not picked up yet).
+	 */
 	private void initHeuristic() {
-		this.heuristic = 0;
+		this.heuristic = 0.0;
+		
+		if(algo != Algorithm.ASTAR) {
+			return;
+		}
+		
+		// Sweep all tasks to deliver
+		for(Task taskToDeliver : groppone) {
+			double cost = vehicle.costPerKm() * currentCity.distanceTo(taskToDeliver.deliveryCity);
+			
+			if(cost > this.heuristic) {
+				this.heuristic = cost;
+			}
+		}
+		
+		// Sweep all tasks to pick up
+		for(Task taskToPickup : pettera) {
+			double cost = vehicle.costPerKm() * currentCity.distanceTo(taskToPickup.pickupCity) +
+					vehicle.costPerKm() * taskToPickup.pickupCity.distanceTo(taskToPickup.deliveryCity);
+			
+			if(cost > this.heuristic) {
+				this.heuristic = cost;
+			}
+		}
+		
+		return;
 	}
 
 

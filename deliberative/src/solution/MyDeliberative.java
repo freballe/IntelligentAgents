@@ -29,7 +29,7 @@ import solution.State.StateComparator;
 public class MyDeliberative implements DeliberativeBehavior {
 
 	// Enum class for the options for the search algorithm
-	enum Algorithm { BFS, ASTAR }
+	enum Algorithm { BFS, ASTAR, DIJKSTRA }
 
 	// User-supplied parameter dictating the search algorithm to employ
 	private Algorithm algorithm;
@@ -61,12 +61,13 @@ public class MyDeliberative implements DeliberativeBehavior {
 	@Override
 	public Plan plan(Vehicle vehicle, TaskSet tasks) {
 		Plan plan;
-		State initialState = new State(tasks, vehicle);	// Short constructor for initial state
+		State initialState = new State(tasks, vehicle, algorithm);	// Short constructor for initial state
 
 		// Compute the plan with the selected algorithm.
 		switch (algorithm) {
 		case ASTAR:
-			plan = aStar(initialState);
+		case DIJKSTRA:
+			plan = aStar(initialState, algorithm);
 			break;
 		case BFS:
 			plan = bfs(initialState);
@@ -96,7 +97,7 @@ public class MyDeliberative implements DeliberativeBehavior {
 	 * @param initialState the root node of the search
 	 * @return a minimum-cost Plan from the root to any goal state
 	 */
-	private Plan aStar(State initialState) {
+	private Plan aStar(State initialState, Algorithm algorithm) {
 		// The queue of pending states, sorted by decreasing estimated total cost
 		PriorityQueue<State> fringe = new PriorityQueue<State>(new State.StateComparator());
 		/* The set of visited states. Implemented as a map, so as to be able to retrieve an element.
@@ -107,9 +108,10 @@ public class MyDeliberative implements DeliberativeBehavior {
 		 * the algorithm, there is only one (the first one to be encountered) that is always kept. */
 		Map<State, State> visited = new HashMap<State, State>();
 		// Only used for logging
-		int nIter = 0;	
+		int nIter = 0;
+		String algoName = (algorithm == Algorithm.ASTAR) ? "A*" : "Dijkstra";
 
-		logger.info("A* launched\n");
+		logger.info(algoName + " launched\n");
 
 		fringe.add(initialState);
 		while(true) {
@@ -121,7 +123,7 @@ public class MyDeliberative implements DeliberativeBehavior {
 
 			// Should not happen
 			if(fringe.isEmpty()){
-				logger.warning("A* terminating: no goal state found\n");
+				logger.warning(algoName + " terminating: no goal state found\n");
 				return null;
 			}
 
@@ -130,10 +132,11 @@ public class MyDeliberative implements DeliberativeBehavior {
 
 			// Return immediately if it is a goal state: optimal by admissibility of the heuristic
 			if(n.isGoal()) {
-				logger.info("A* terminating: found plan. \n" + "Number of iterations: " + nIter + "\n" +
-						"Number of visited nodes: " + visited.size() + "\n" + "Total km: " + 
-						(int)(n.getCostSoFar()/vehicle.costPerKm()) + "\n" + "Total cost: " + 
-						n.getCostSoFar() + "\n" + "Path found:\n" + n.printPathSoFar() + "\n");
+				logger.info(algoName +" terminating: found plan. \n" + "Number of iterations: " + 
+						nIter + "\n" + "Number of visited nodes: " + visited.size() + "\n" + 
+						"Total km: " + (int)(n.getCostSoFar()/vehicle.costPerKm()) + "\n" + 
+						"Total cost: " + n.getCostSoFar() + "\n" + "Path found:\n" + 
+						n.printPathSoFar() + "\n");
 
 				return n.getPlanSoFar();
 			}
