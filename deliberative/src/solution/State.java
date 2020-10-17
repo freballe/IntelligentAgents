@@ -4,7 +4,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Set;
 
 import logist.plan.Action;
@@ -12,7 +11,6 @@ import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskSet;
-import logist.topology.Topology;
 import logist.topology.Topology.City;
 import logist.plan.Action.Pickup;
 import logist.plan.Action.Move;
@@ -37,25 +35,26 @@ class State {
 	 * the same identifying fields, depending on the path through the search graph that led to them. */
 	private Arc fatherArc;		// The (oriented) arc coming from the predecessor State
 	private double costSoFar;	// The cost of the path from the root
+	private int depth;			// The number of arcs traversed from the root
 	private double heuristic;	// The (under)estimated cost to any goal state
 	private Vehicle vehicle;
 
-	
-	
+
+
 	/**
 	 * Reduced constructor, called to instantiate the initial state, for which 
 	 * some parameters can be derived from the vehicle.
 	 */
 	public State(TaskSet pettera, Vehicle vehicle) {
-		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera, null, vehicle, 0);
+		this(vehicle.getCurrentCity(), vehicle.getCurrentTasks(), pettera, null, vehicle, 0.0, 0);
 	}
 
-	
+
 	/**
 	 * Full constructor.
 	 */
 	public State(City currentCity, TaskSet groppone, TaskSet pettera, Arc father, 
-			Vehicle vehicle, double costSoFar) {
+			Vehicle vehicle, double costSoFar, int depth) {
 		super();
 		this.currentCity = currentCity;
 		this.groppone = groppone;
@@ -63,7 +62,8 @@ class State {
 		this.costSoFar = costSoFar;
 		this.vehicle = vehicle;
 		this.fatherArc = father;
-		
+		this.depth = depth;
+
 		initHeuristic();
 	}
 
@@ -77,17 +77,17 @@ class State {
 		if(this.getFatherArc() == null) {
 			return new Plan(currentCity);
 		}
-		
+
 		// Add the actions of the last arc to the Plan leading to the father
 		Plan plan = this.getFatherArc().getStart().getPlanSoFar();
 		for(Action action : this.getFatherArc().getActions()){
 			plan.append(action);
 		}
-		
+
 		return plan;
 	}
 
-	
+
 	/**
 	 * @return whether or not this State is a goal state. This is true iff no task is either not picked up 
 	 * or picked up but not delivered.
@@ -96,57 +96,58 @@ class State {
 		return groppone.isEmpty() && pettera.isEmpty();
 	}
 
-	
+
 	/**
 	 * Computes all the children States by enumerating all the outgoing Arcs.
 	 * Arcs are either a single Pickup, or a sequence of Moves (constituting the best path
-	 * from currentCity to a city where a task is due to be picked up or delivered) followed by 
-	 * a sequence of Deliveries (delivering every possible task in the destination city).
+	 * from currentCity to a city where a task is due to be delivered) followed by 
+	 * a sequence of Deliveries (delivering every possible task in the destination city), or a 
+	 * sequence of Moves (constituting the best path from currentCity to a city where a task is 
+	 * due to be picked up and no task is due to be delivered) followed by a single Pickup.
 	 * @return a List containing all the States reachable from this State.
 	 */
 	public List<State> getChildren(){
 		List<State> states = new LinkedList<State>();
-		
+
 		// Enumerate all single-Pickup Arcs
 		for(Task task : pettera) {
 			if(task.pickupCity == currentCity && task.weight + groppone.weightSum() <= vehicle.capacity()) {
 				Arc arc = new Arc(this);
-				arc.addAction(new Pickup(task));
 				
+				// Add the Pickup to the Arc
+				arc.addAction(new Pickup(task));
+
 				// A Pickup does not incur costs, so costSoFar is the same for the new State
-				State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), arc, vehicle, costSoFar);
+				State end = new State(currentCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
+						arc, vehicle, costSoFar, this.depth+1);
+				
 				// Modify the new State, so that "task" figures as picked up
 				end.pickupTask(task);
-				arc.setEnd(end);
 				
+				arc.setEnd(end);
 				states.add(end);
 			}
 		}
-		
-		// Line up all the cities where there is something to do (either pick up or delivery a task)
-		Set<City> citiesToGo = new HashSet<City>();
-		for(Task task : pettera) {
-			if(task.pickupCity != currentCity) {
-				citiesToGo.add(task.pickupCity);
-			}
-		}
+
+		// Line up all the cities where there is a task to deliver
+		Set<City> deliveryCities = new HashSet<City>();
 		for(Task task : groppone) {
-			citiesToGo.add(task.deliveryCity);
+			deliveryCities.add(task.deliveryCity);
 		}
-		
-		// Enumerate all Move-Delivery Arcs
-		for(City cityToGo : citiesToGo) {
+
+		// Enumerate all Moves-Deliveries Arcs
+		for(City deliveryCity : deliveryCities) {
 			Arc arc = new Arc(this);
-			
+
 			// Add all Moves to the Arc and set total cost
-			for(City transitCity : currentCity.pathTo(cityToGo)) {
+			for(City transitCity : currentCity.pathTo(deliveryCity)) {
 				arc.addAction(new Move(transitCity));
 			}
-			arc.setCost(vehicle.costPerKm() * currentCity.distanceTo(cityToGo));
-			
-			// Set proper costSoFar for the new State
-			State end = new State(cityToGo, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), arc, vehicle, costSoFar+arc.getCost());
-			arc.setEnd(end);
+			arc.setCost(vehicle.costPerKm() * currentCity.distanceTo(deliveryCity));
+
+			// Set proper costSoFar for the new State (depth is not definitive)
+			State end = new State(deliveryCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
+					arc, vehicle, costSoFar+arc.getCost(), this.depth+1);
 			
 			// Modify the new State, so that all deliverable tasks figure as delivered
 			List<Task> delivered = end.deliveryTasks();
@@ -155,27 +156,63 @@ class State {
 				arc.addAction(new Delivery(task));
 			}
 			
+			// "Artificially" set depth so as to make each Delivery count as one move
+			end.setDepth(this.depth + delivered.size());
+
+			arc.setEnd(end);
+			states.add(end);
+		}
+
+		// Line up all the tasks to be picked up in a city where no task is to be delivered
+		Set<Task> tasksToPickup = new HashSet<Task>();
+		for(Task task : pettera) {
+			if(task.pickupCity != currentCity && !deliveryCities.contains(task.pickupCity)) {
+				tasksToPickup.add(task);
+			}
+		}
+
+		// Enumerate all Moves-Pickup Arcs
+		for(Task taskToPickup : tasksToPickup) {
+			City pickupCity = taskToPickup.pickupCity;
+			Arc arc = new Arc(this);
+
+			// Add all Moves to the Arc and set total cost
+			for(City transitCity : currentCity.pathTo(pickupCity)) {
+				arc.addAction(new Move(transitCity));
+			}
+			arc.setCost(vehicle.costPerKm() * currentCity.distanceTo(pickupCity));
+
+			// Set proper costSoFar for the new State
+			State end = new State(pickupCity, TaskSet.copyOf(groppone), TaskSet.copyOf(pettera), 
+					arc, vehicle, costSoFar+arc.getCost(), this.depth+1);
+
+			// Modify the new State, so that "task" figures as picked up
+			end.pickupTask(taskToPickup);
+			// Add the Pickup to the Arc
+			arc.addAction(new Pickup(taskToPickup));
+
+			arc.setEnd(end);
 			states.add(end);
 		}
 
 		return states;
 	}
 
-	
+
 	/**
 	 * Modifies groppone and pettera, so that all deliverable tasks figure as delivered
 	 * @return the list of delivererd tasks
 	 */
 	private List<Task> deliveryTasks() {
 		List<Task> delivered = new LinkedList<Task>();
-		
+
 		for(Task task : groppone) {
 			if(task.deliveryCity == currentCity) {
 				delivered.add(task);
 				groppone.remove(task);
 			}
 		}
-		
+
 		return delivered;
 	}
 
@@ -188,13 +225,13 @@ class State {
 		pettera.remove(task);
 	}
 
-	
+
 	// TODO
 	private void initHeuristic() {
 		this.heuristic = 0;
 	}
-	
-	
+
+
 	/**
 	 * Implements the function f(n) = g(n) + h(n).
 	 * @return the estimated cost from the root to a goal state, passing through this State
@@ -203,7 +240,7 @@ class State {
 		return heuristic + costSoFar;
 	}
 
-	
+
 	/* Custom implementation that only takes into account the identifying fields. */
 	@Override
 	public int hashCode() {
@@ -243,28 +280,84 @@ class State {
 			return false;
 		return true;
 	}
-	
-	
+
+
 	public Arc getFatherArc() {
 		return fatherArc;
 	}
 
-	
+
 	public void setFatherArc(Arc fatherArc) {
 		this.fatherArc = fatherArc;
 	}
 
-	
+
 	public double getCostSoFar() {
 		return costSoFar;
 	}
 
-	
+
 	public void setCostSoFar(double costSoFar) {
 		this.costSoFar = costSoFar;
 	}
 
+
+	public int getDepth() {
+		return depth;
+	}
+
+
+
+
+	public void setDepth(int depth) {
+		this.depth = depth;
+	}
 	
+
+
+	@Override
+	public String toString() {
+		return "State [currentCity=" + currentCity.name + ", groppone=" + printTaskSet(groppone) + 
+				", pettera=" + printTaskSet(pettera) + "\ncostSoFar=" + costSoFar + ", depth=" + depth + "]";
+	}
+
+
+
+
+
+
+	private String printTaskSet(TaskSet taskSet) {
+		String s = "TaskSet [";
+		int i = 0;
+
+		for(Task task : taskSet) {
+			i++;
+			if(i == 1) {
+				s += task.id;
+			} else {
+				s += " " + task.id;
+			}
+		}
+
+		return s + "]";
+	}
+
+
+	public String printPathSoFar() {
+		String s = "";
+
+		if(this.fatherArc != null) {
+			s = this.fatherArc.getStart().printPathSoFar();
+		}
+
+		return s + this + "\n";
+	}
+
+
+
+
+
+
 	/**
 	 * Implements a reverse-order (in terms of f(n)) Comparator for States
 	 */
