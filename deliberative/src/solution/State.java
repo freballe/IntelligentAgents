@@ -238,8 +238,6 @@ class State {
 	 * delivered in currentCity) 
 	 */
 	private Task smallestDeliverableTask() {
-		Task deliverable = null;
-		
 		if(groppone.isEmpty()) {
 			return null;
 		}
@@ -247,11 +245,11 @@ class State {
 		// Iteration is in increasing order of ID
 		for(Task task : groppone) {
 			if(task.deliveryCity == currentCity) {
-				deliverable = task;
+				return task;
 			}
 		}
 		
-		return deliverable;
+		return null;
 	}
 	
 	
