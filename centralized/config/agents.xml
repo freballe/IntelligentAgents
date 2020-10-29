@@ -9,4 +9,17 @@
 		<set class-name="template.CentralizedTemplate"/>
 	</agent>
 	
+	<!-- #### CENTRALIZED AGENTS ### -->
+	<agent name="centralized-main">
+		<set class-path="bin/"/>
+		<set class-name="template.MyCentralised"/>
+		
+		<!-- #### timeout margin ### -->
+		<set timeout-margin="100"/>
+		
+		<!-- #### epsilon-greedy strategy ### -->
+		<set eps-thresh="0.4"/>
+		<set eps-rate="1000.0"/>
+	</agent>
+	
 </agents>
