@@ -1,6 +1,8 @@
 package peppo;
 
+import logist.plan.Action;
 import logist.task.Task;
+import logist.topology.Topology.City;
 
 class Azione {
 	enum Type {PICKUP, DELIVERY};
@@ -25,5 +27,26 @@ class Azione {
 	Type getType() {
 		return type;
 	}
+	
+	
+	/**
+	 * @return the city where this action takes place
+	 */
+	City getCity() {
+		if(type == Type.PICKUP) {
+			return task.pickupCity;
+		}
+		return task.deliveryCity;
+	}
 
+	
+	/**
+	 * @return the Action corresponding to this Azione
+	 */
+	Action getAction() {
+		if(type == Type.PICKUP) {
+			return new Action.Pickup(task);
+		}
+		return new Action.Delivery(task);
+	}
 }

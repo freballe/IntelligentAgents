@@ -20,11 +20,7 @@ import logist.task.TaskSet;
 import logist.topology.Topology;
 import logist.topology.Topology.City;
 
-/**
- * A very simple auction agent that assigns all tasks to its first vehicle and
- * handles them sequentially.
- *
- */
+
 @SuppressWarnings("unused")
 public class MyCentralised implements CentralizedBehavior {
 

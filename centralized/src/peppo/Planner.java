@@ -12,6 +12,10 @@ import logist.task.TaskDistribution;
 import logist.task.TaskSet;
 import logist.topology.Topology;
 
+
+/**
+ * A centralised planner using an epsilon-greedy (with decreasing epsilon) stochastic local search.
+ */
 class Planner {
 	private static final int ITERSTOLOG = 1000;
 	private static final Level LOGLEVEL = Level.INFO;
