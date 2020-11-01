@@ -120,7 +120,7 @@ class Node<T> implements Iterable<Node<T>> {
 	 * Swaps this node with the next one.
 	 * @return the (ex) next node
 	 */
-	Node<T> pushAhead(){
+	Node<T> pushBack(){
 		Node<T> exNext = this.next;
 		
 		// Do nothing if this node is the last
