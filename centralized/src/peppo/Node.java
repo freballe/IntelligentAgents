@@ -30,13 +30,17 @@ class Node<T> implements Iterable<Node<T>> {
 	 * @return a copy of this node, with "previous" set to null, pointing to copied "next" nodes.
 	 */
 	Node<T> copy(){
+		// The copy of this
 		Node<T> copyThis = new Node<T>(this.getElement());
+		// The copy of next
 		Node<T> copyNext;
 		
 		if(this.getNext() == null) {
+			// previous and next are still set to null
 			return copyThis;
 		}
 		
+		// Copy next, and set pointers
 		copyNext = this.getNext().copy();
 		copyNext.setPrevious(copyThis);
 		copyThis.setNext(copyNext);
@@ -52,13 +56,16 @@ class Node<T> implements Iterable<Node<T>> {
 	 * Unhooks this node from the list it's in: lets its previous and its next node "bypass" it.
 	 */
 	void unhook() {
+		// Let previous bypass you
 		if(this.previous != null) {
 			this.previous.setNext(this.next);
 		}
+		// Let next bypass you
 		if(this.next != null) {
 			this.next.setPrevious(this.previous);
 		}
 		
+		// Forget them
 		this.setNext(null);
 		this.setPrevious(null);
 		
@@ -143,6 +150,7 @@ class Node<T> implements Iterable<Node<T>> {
 	 * Inner iterator class
 	 */
 	class Traverser implements Iterator<Node<T>>{
+		// The node to return at the next call to next()
 		private Node<T> currentNode;
 		
 		Traverser(Node<T> startNode){
