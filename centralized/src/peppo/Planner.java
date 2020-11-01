@@ -51,7 +51,7 @@ class Planner {
 	List<Plan> plan(){
 		long startTime = System.currentTimeMillis();
 		long elapsedTime = 0L;
-		Solution currentSolution = Solution.randomInitialSolution();
+		Solution currentSolution = new Solution(vehicles, tasks);
 		Solution bestSolution = currentSolution;
 		double epsilon;		// The probability to move to a random neighbour
 		

@@ -9,7 +9,12 @@ class Node<T> implements Iterable<Node<T>> {
 	
 	
 	
-	/* BUILDERS */
+	/* CONSTRUCTORS */
+	
+	
+	Node(T element){
+		this(element, null, null);
+	}
 	
 	
 	Node(T element, Node<T> previous, Node<T> next) {
@@ -25,7 +30,7 @@ class Node<T> implements Iterable<Node<T>> {
 	 * @return a copy of this node, with "previous" set to null, pointing to copied "next" nodes.
 	 */
 	Node<T> copy(){
-		Node<T> copyThis = new Node<T>(this.getElement(), null, null);
+		Node<T> copyThis = new Node<T>(this.getElement());
 		Node<T> copyNext;
 		
 		if(this.getNext() == null) {
@@ -50,7 +55,7 @@ class Node<T> implements Iterable<Node<T>> {
 		if(this.previous != null) {
 			this.previous.setNext(this.next);
 		}
-		if(this.previous != null) {
+		if(this.next != null) {
 			this.next.setPrevious(this.previous);
 		}
 		
@@ -77,8 +82,10 @@ class Node<T> implements Iterable<Node<T>> {
 		this.setNext(node);
 		this.setPrevious(node.previous);
 		// NOW LOVE ME
-		this.next.setPrevious(this);
-		this.previous.setNext(this);
+		node.setPrevious(this);
+		if(this.previous != null) {
+			this.previous.setNext(this);
+		}
 		
 		return;
 	}
@@ -100,8 +107,10 @@ class Node<T> implements Iterable<Node<T>> {
 		this.setPrevious(node);
 		this.setNext(node.next);
 		// NOW LOVE ME
-		this.next.setPrevious(this);
-		this.previous.setNext(this);
+		node.setNext(this);
+		if(this.next != null) {
+			this.next.setPrevious(this);
+		}
 		
 		return;
 	}
