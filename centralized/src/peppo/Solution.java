@@ -58,6 +58,24 @@ class Solution {
 	double getCost() {
 		return cost;
 	}
+
+	
+	
+	public Solution getRandomNeighbour() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static Solution randomInitialSolution() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public Solution getBestNeighbour() {
+		
+	}
 	
 
 }
