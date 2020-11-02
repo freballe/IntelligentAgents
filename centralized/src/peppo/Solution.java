@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import logist.plan.Plan;
 import logist.simulation.Vehicle;
@@ -15,6 +17,8 @@ import logist.topology.Topology.City;
 import peppo.Azione.Type;
 
 class Solution {
+	private static final int ITERSTOLOG = 1;
+	private static final Level LOGLEVEL = Level.INFO;
 	// The maximum number of times we look for a different vehicle to carry a task
 	private static final int MAXDIFFVEHICLES = 20;
 	// The first action for each agent
@@ -29,7 +33,8 @@ class Solution {
 	private double cost;
 	// PRNG
 	private Random coin;
-
+	public static Logger logger = Logger.getLogger("affogalagoffa");
+	public static boolean hasToLog = true;
 
 
 	/* CONSTRUCTORS */
@@ -165,11 +170,21 @@ class Solution {
 		Solution currentNeighbour;
 
 		// Find a vehicle with at least a task
-		for(vez=getRandomVehicle(); nTasks.get(vez).intValue() == 0; vez=getRandomVehicle());
+		//for(vez=getRandomVehicle(); nTasks.get(vez).intValue() == 0; vez=getRandomVehicle());
+		if(hasToLog) {
+			logger.info("Vamos a getRandomVehicle");
+		}
+		vez = getRandomVehicle();
 		// Get one of its tasks a random
+		if(hasToLog) {
+			logger.info("Vamos a getRandomTask");
+		}
 		taz = getRandomTask(vez);
 
 		// Try all possible reorderings of taz within vez
+		if(hasToLog) {
+			logger.info("Vamos a findBestAssignment");
+		}
 		currentNeighbour = findBestAssignment(vez, vez, taz);
 		bestNeighbour = currentNeighbour;
 
@@ -181,6 +196,9 @@ class Solution {
 		// Get a different random vehicle
 		Vehicle zio = vez;
 		int i;
+		if(hasToLog) {
+			logger.info("Vamos en al for");
+		}
 		for(i = 0; (i < MAXDIFFVEHICLES) && (zio == vez || zio.capacity() < taz.weight); i++) {
 			zio = getRandomVehicle();
 		}
@@ -188,7 +206,9 @@ class Solution {
 		if(i == MAXDIFFVEHICLES) {
 			return bestNeighbour;
 		}
-
+		if(hasToLog) {
+			logger.info("Duepo el for, prema de findBestAssignment");
+		}
 		// Try all possible orderings of taz inside zio
 		currentNeighbour = findBestAssignment(vez, zio, taz);
 		if(currentNeighbour.getCost() < bestNeighbour.getCost()) {
@@ -207,7 +227,8 @@ class Solution {
 		Task taz;
 
 		// Find a vehicle with at least a task
-		for(vez=getRandomVehicle(); nTasks.get(vez).intValue() == 0; vez=getRandomVehicle());
+		//for(vez=getRandomVehicle(); nTasks.get(vez).intValue() == 0; vez=getRandomVehicle());
+		vez = getRandomVehicle();
 		// Get one of its tasks a random
 		taz = getRandomTask(vez);
 
@@ -287,7 +308,103 @@ class Solution {
 	 * @return the best assignment
 	 */
 	private Solution findBestAssignment(Vehicle oldVeh, Vehicle newVeh, Task task) {
-		return null;
+		Solution currentSolution = new Solution(this);
+		Solution bestSolution = new Solution(this);
+		Node<Azione> pickupAzione = null;
+		Node<Azione> deliveryAzione = null;
+		Node<Azione> headAzione = currentSolution.firstActions.get(oldVeh);
+		Node<Azione> lastSwitchedOuter;
+		Node<Azione> lastSwitchedInner;
+
+		
+		int gropponeOuter = 0;
+		int gropponeInner = 0;
+		
+		if(hasToLog) {
+			logger.info("findBestAssignment - prema del primo for");
+		}
+		for(Node<Azione> node : headAzione) {
+			if(node.getElement().getTask() != task) {
+				continue;
+			}
+			if(node.getElement().getType() == Type.PICKUP) {
+				pickupAzione = node;
+			}
+			else {
+				deliveryAzione = node;
+				break;
+			}
+		}
+		if(hasToLog) {
+			logger.info("findBestAssignment - duepo el primo for");
+		}
+		pickupAzione.unhook();
+		deliveryAzione.unhook();
+		
+		headAzione = currentSolution.firstActions.get(newVeh);
+		pickupAzione.insertBefore(headAzione);
+		if(hasToLog) {
+			logger.info("findBestAssignment - prema del outer do while");
+		}
+		do{
+			deliveryAzione.insertAfter(pickupAzione);
+			gropponeInner = gropponeOuter + task.weight;
+			if(hasToLog) {
+				logger.info("findBestAssignment - entro l'outer do while, gropponeInner "+ gropponeInner +" , GropponeOuter "+ gropponeOuter);
+			}
+			int countIters = 0;
+			do {
+				countIters += 1;
+				if(gropponeInner > newVeh.capacity()) {
+					if(hasToLog) {
+						logger.info("findBestAssignment - Capacity exceeded, BREAKING");
+					}
+					break;
+				}
+				
+				if(bestSolution.getCost() > currentSolution.getCost()) {
+					if(hasToLog) {
+						logger.info("findBestAssignment - COPIA BEST");
+					}
+					bestSolution = new Solution(currentSolution);
+				}
+				
+				lastSwitchedInner = deliveryAzione.pushBack();
+				if (lastSwitchedInner == null) {
+					if(hasToLog) {
+						logger.info("findBestAssignment - BREKKATOOOOOOOO INNERRRRRRR");
+					}
+					break;
+				}
+				if(lastSwitchedInner.getElement().getType() == Type.PICKUP) {
+					gropponeInner += lastSwitchedInner.getElement().getTask().weight;
+				}
+				else {
+					gropponeInner -= lastSwitchedInner.getElement().getTask().weight;
+				}
+				
+			}while(true);
+			
+			if(hasToLog) {
+				logger.info("findBestAssignment - DOPO inner, ITERS:" + countIters);
+			}
+						
+			lastSwitchedOuter = pickupAzione.pushBack();
+			if (lastSwitchedOuter == null) {
+				if(hasToLog) {
+					logger.info("findBestAssignment - BREKKATOOOOOOOO OUTERRRRRRRRR");
+				}
+				break;
+			}
+			if(lastSwitchedOuter.getElement().getType() == Type.PICKUP) {
+				gropponeOuter += lastSwitchedOuter.getElement().getTask().weight;
+			}
+			else {
+				gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
+			}
+		}while(true);
+		
+		return bestSolution;
 	}
 
 
@@ -300,7 +417,75 @@ class Solution {
 	 * @return the random assignment
 	 */
 	private Solution findRandomAssignment(Vehicle oldVeh, Vehicle newVeh, Task task) {
-		return null;
+		Solution currentSolution = new Solution(this);
+		Node<Azione> pickupAzione = null;
+		Node<Azione> deliveryAzione = null;
+		Node<Azione> headAzione = currentSolution.firstActions.get(oldVeh);
+		Node<Azione> lastSwitchedOuter;
+		Node<Azione> lastSwitchedInner;
+		
+		for(Node<Azione> node : headAzione) {
+			if(node.getElement().getTask() != task) {
+				continue;
+			}
+			if(node.getElement().getType() == Type.PICKUP) {
+				pickupAzione = node;
+			}
+			else {
+				deliveryAzione = node;
+				break;
+			}
+		}
+				
+		int n = currentSolution.nTasks.get(newVeh);
+		int counter = coin.nextInt((2*n+1) * (n+1)); // number of max possible assignments of pickup and delivery 
+
+		while(counter > 0) {
+			int gropponeOuter = 0;
+			int gropponeInner = 0;
+			pickupAzione.unhook();
+			deliveryAzione.unhook();
+			
+			headAzione = currentSolution.firstActions.get(newVeh);
+			pickupAzione.insertBefore(headAzione);
+			
+			do{
+				deliveryAzione.insertAfter(pickupAzione);
+				gropponeInner = gropponeOuter + task.weight;
+				
+				do {
+					if(gropponeInner > newVeh.capacity()) {
+						break;
+					}
+					
+					counter--;
+					
+					lastSwitchedInner = deliveryAzione.pushBack();
+					if (lastSwitchedInner == null) {
+						break;
+					}
+					if(lastSwitchedInner.getElement().getType() == Type.PICKUP) {
+						gropponeInner += lastSwitchedInner.getElement().getTask().weight;
+					}
+					else {
+						gropponeInner -= lastSwitchedInner.getElement().getTask().weight;
+					}
+					
+				}while(true);
+				
+				lastSwitchedOuter = pickupAzione.pushBack();
+				if (lastSwitchedOuter == null) {
+					break;
+				}
+				if(lastSwitchedOuter.getElement().getType() == Type.PICKUP) {
+					gropponeOuter += lastSwitchedOuter.getElement().getTask().weight;
+				}
+				else {
+					gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
+				}
+			}while(true);
+		}
+		return currentSolution;
 	}
 
 

@@ -12,7 +12,7 @@
 	<!-- #### CENTRALIZED AGENTS ### -->
 	<agent name="centralized-main">
 		<set class-path="bin/"/>
-		<set class-name="template.MyCentralised"/>
+		<set class-name="peppo.MyCentralised"/>
 		
 		<!-- #### timeout margin ### -->
 		<set timeout-margin="100"/>

@@ -17,7 +17,7 @@ import logist.topology.Topology;
  * A centralised planner using an epsilon-greedy (with decreasing epsilon) stochastic local search.
  */
 class Planner {
-	private static final int ITERSTOLOG = 1000;
+	private static final int ITERSTOLOG = 1;
 	private static final Level LOGLEVEL = Level.INFO;
 	private List<Vehicle> vehicles;
 	private TaskSet tasks;
@@ -68,10 +68,16 @@ class Planner {
 			// Toss a coin
 			if(coin.nextDouble() < epsilon) {
 				// With probability epsilon, move to random neighbour
+				if(nIter % ITERSTOLOG == 0) {
+					logger.info("Vamos a random");
+				}
 				currentSolution = currentSolution.getRandomNeighbour();
 			} 
 			else {
 				// Otherwise, move to best neighbour
+				if(nIter % ITERSTOLOG == 0) {
+					logger.info("Vamos ar colosseo");
+				}
 				currentSolution = currentSolution.getBestNeighbour();
 			}
 			
