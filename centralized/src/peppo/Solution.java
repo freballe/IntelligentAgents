@@ -17,8 +17,6 @@ import logist.topology.Topology.City;
 import peppo.Azione.Type;
 
 class Solution {
-	private static final int ITERSTOLOG = 1;
-	private static final Level LOGLEVEL = Level.INFO;
 	// The maximum number of times we look for a different vehicle to carry a task
 	private static final int MAXDIFFVEHICLES = 20;
 	// The first action for each agent
@@ -33,8 +31,7 @@ class Solution {
 	private double cost;
 	// PRNG
 	private Random coin;
-	public static Logger logger = Logger.getLogger("affogalagoffa");
-	public static boolean hasToLog = true;
+	public final static Logger logger = Logger.getLogger("affogalagoffa");
 
 
 	/* CONSTRUCTORS */
@@ -50,7 +47,7 @@ class Solution {
 		this.firstActions = new HashMap<Vehicle, Node<Azione>>();
 		this.nTasks = new HashMap<Vehicle, Integer>();
 		this.totalTasks = tasks.size();
-		this.coin = new Random();
+		this.coin = new Random(15);
 
 		// Fill firstActions with null, and nTasks with 0, for each vehicle
 		for(Vehicle vehicle : vehicles) {
@@ -103,9 +100,9 @@ class Solution {
 	private Solution(Solution other) {
 		this.vehicles = other.vehicles;
 		this.firstActions = new HashMap<Vehicle, Node<Azione>>();
-		this.nTasks = new HashMap<Vehicle, Integer>(other.nTasks);
+		this.nTasks = new HashMap<Vehicle, Integer>();
 		this.totalTasks = other.totalTasks;
-		this.coin = new Random();
+		this.coin = new Random(7);
 		this.cost = other.cost;
 
 		// Shallow copy of each of the action nodes
@@ -117,6 +114,12 @@ class Solution {
 			} else {
 				this.firstActions.put(vehicle, firstAction.copy());
 			}
+		}
+
+		// Shallow copy of each of the nTasks
+		for(Vehicle vehicle : vehicles) {
+			int numTasks = other.nTasks.get(vehicle);
+			this.nTasks.put(vehicle, numTasks);
 		}
 
 		return;
@@ -170,21 +173,14 @@ class Solution {
 		Solution currentNeighbour;
 
 		// Find a vehicle with at least a task
-		//for(vez=getRandomVehicle(); nTasks.get(vez).intValue() == 0; vez=getRandomVehicle());
-		if(hasToLog) {
-			logger.info("Vamos a getRandomVehicle");
-		}
+		logger.info("Vamos a getRandomVehicle");
 		vez = getRandomVehicle();
 		// Get one of its tasks a random
-		if(hasToLog) {
-			logger.info("Vamos a getRandomTask");
-		}
+		logger.info("Vamos a getRandomTask");
 		taz = getRandomTask(vez);
 
 		// Try all possible reorderings of taz within vez
-		if(hasToLog) {
-			logger.info("Vamos a findBestAssignment");
-		}
+		logger.info("Vamos a findBestAssignment con vez-vez");
 		currentNeighbour = findBestAssignment(vez, vez, taz);
 		bestNeighbour = currentNeighbour;
 
@@ -194,11 +190,9 @@ class Solution {
 		}
 
 		// Get a different random vehicle
+		logger.info("Vamos a ghettare un different randomVehicle");
 		Vehicle zio = vez;
 		int i;
-		if(hasToLog) {
-			logger.info("Vamos en al for");
-		}
 		for(i = 0; (i < MAXDIFFVEHICLES) && (zio == vez || zio.capacity() < taz.weight); i++) {
 			zio = getRandomVehicle();
 		}
@@ -206,9 +200,7 @@ class Solution {
 		if(i == MAXDIFFVEHICLES) {
 			return bestNeighbour;
 		}
-		if(hasToLog) {
-			logger.info("Duepo el for, prema de findBestAssignment");
-		}
+		logger.info("Vamos a findBestAssignment con vez-zio");
 		// Try all possible orderings of taz inside zio
 		currentNeighbour = findBestAssignment(vez, zio, taz);
 		if(currentNeighbour.getCost() < bestNeighbour.getCost()) {
@@ -227,12 +219,14 @@ class Solution {
 		Task taz;
 
 		// Find a vehicle with at least a task
-		//for(vez=getRandomVehicle(); nTasks.get(vez).intValue() == 0; vez=getRandomVehicle());
+		logger.info("Vamos a getRandomVehicle");
 		vez = getRandomVehicle();
 		// Get one of its tasks a random
+		logger.info("Vamos a getRandomTask");
 		taz = getRandomTask(vez);
 
 		// Get another random vehicle that can carry task
+		logger.info("Vamos a ghettare un different randomVehicle");
 		Vehicle zio = vez;
 		int i;
 		for(i = 0; (i < MAXDIFFVEHICLES) && (zio.capacity() < taz.weight); i++) {
@@ -244,6 +238,7 @@ class Solution {
 		}
 
 		// Try a random ordering of taz inside zio
+		logger.info("Vamos a findRandomAssignment con vez-zio");
 		return findRandomAssignment(vez, zio, taz);
 	}
 
@@ -269,7 +264,8 @@ class Solution {
 		}
 
 		// Should not happen
-		throw new RuntimeException("Could not find random vehicle");
+		throw new RuntimeException("Could not find random vehicle. taskNum = " + taskNum +
+				", cumul = " + cumul + ", totalTasks = " + totalTasks);
 	}
 
 
@@ -295,7 +291,8 @@ class Solution {
 		}
 
 		// Should not happen
-		throw new RuntimeException("Could not find random task");
+		throw new RuntimeException("Could not find random task. taskNum = " + taskNum +
+				", nPickup = " + nPickup + ", nTasks[vehicle] = " + nTasks.get(vehicle));
 	}
 
 
@@ -309,101 +306,97 @@ class Solution {
 	 */
 	private Solution findBestAssignment(Vehicle oldVeh, Vehicle newVeh, Task task) {
 		Solution currentSolution = new Solution(this);
-		Solution bestSolution = new Solution(this);
-		Node<Azione> pickupAzione = null;
-		Node<Azione> deliveryAzione = null;
-		Node<Azione> headAzione = currentSolution.firstActions.get(oldVeh);
-		Node<Azione> lastSwitchedOuter;
-		Node<Azione> lastSwitchedInner;
+		Solution bestSolution;
+		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
+		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
 
-		
+		logger.info("oldVeh = " + oldVeh + ", newVeh = " + newVeh);
+
+		// Unassign task from oldVeh
+		logger.info("Unassigning task from oldVeh");
+		currentSolution.checkIntegrity();
+		currentSolution.unassignTask(oldVeh, task);
+		currentSolution.deltaNTasks(oldVeh, -1);
+		currentSolution.deltaNTasks(newVeh, +1);
+
+		// Initialise bestSolution
+		bestSolution = new Solution(this);
+
+		// Outer do-while: place pickupNode
+		logger.info("Begining outer loop");
+		pickupNode.unhook();
+		pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
+		// Variables for outer loop
+		Node<Azione> lastSwitchedOuter;
 		int gropponeOuter = 0;
-		int gropponeInner = 0;
-		
-		if(hasToLog) {
-			logger.info("findBestAssignment - prema del primo for");
-		}
-		for(Node<Azione> node : headAzione) {
-			if(node.getElement().getTask() != task) {
-				continue;
-			}
-			if(node.getElement().getType() == Type.PICKUP) {
-				pickupAzione = node;
-			}
-			else {
-				deliveryAzione = node;
-				break;
-			}
-		}
-		if(hasToLog) {
-			logger.info("findBestAssignment - duepo el primo for");
-		}
-		pickupAzione.unhook();
-		deliveryAzione.unhook();
-		
-		headAzione = currentSolution.firstActions.get(newVeh);
-		pickupAzione.insertBefore(headAzione);
-		if(hasToLog) {
-			logger.info("findBestAssignment - prema del outer do while");
-		}
+		int nIterOuter = 0;
 		do{
-			deliveryAzione.insertAfter(pickupAzione);
-			gropponeInner = gropponeOuter + task.weight;
-			if(hasToLog) {
-				logger.info("findBestAssignment - entro l'outer do while, gropponeInner "+ gropponeInner +" , GropponeOuter "+ gropponeOuter);
-			}
-			int countIters = 0;
+			// Inner do-while: place deliveryNode
+			logger.info("Outer iteration " + nIterOuter++ + ".Beginning inner loop.");
+			deliveryNode.unhook();
+			deliveryNode.insertAfter(pickupNode);
+			// Variables for inner loop
+			Node<Azione> lastSwitchedInner;
+			int gropponeInner = gropponeOuter + task.weight;
+			int nIterInner = 0;
 			do {
-				countIters += 1;
+				logger.info("Inner iteration " + nIterInner++);
+
+				// Break right away if capacity exceeded: cannot delay delivery further
 				if(gropponeInner > newVeh.capacity()) {
-					if(hasToLog) {
-						logger.info("findBestAssignment - Capacity exceeded, BREAKING");
-					}
+					logger.info("Inner loop: capacity exceeded. Breaking");
 					break;
 				}
-				
+
+				// Copy in bestSolution if currentSolution is better
 				if(bestSolution.getCost() > currentSolution.getCost()) {
-					if(hasToLog) {
-						logger.info("findBestAssignment - COPIA BEST");
-					}
+					logger.info("Inner loop: found better solution. Copying");
+					currentSolution.checkIntegrity();
 					bestSolution = new Solution(currentSolution);
 				}
-				
-				lastSwitchedInner = deliveryAzione.pushBack();
+
+				// Push the delivery back by one position
+				lastSwitchedInner = deliveryNode.pushBack();
+				logger.info("lastSwitchedInner = " + lastSwitchedInner + ", deliveryNode.previous = " 
+						+ deliveryNode.getPrevious() + ", deliveryNode.next = " + deliveryNode.getNext());
+				// If delivery was already at the end, break
 				if (lastSwitchedInner == null) {
-					if(hasToLog) {
-						logger.info("findBestAssignment - BREKKATOOOOOOOO INNERRRRRRR");
-					}
+					logger.info("Inner loop: reached last position for delivery");
 					break;
 				}
+				// Otherwise, if we went past a pickup, increase gropponeInner
 				if(lastSwitchedInner.getElement().getType() == Type.PICKUP) {
 					gropponeInner += lastSwitchedInner.getElement().getTask().weight;
 				}
+				// Otherwise, decrease gropponeInner
 				else {
 					gropponeInner -= lastSwitchedInner.getElement().getTask().weight;
 				}
-				
 			}while(true);
-			
-			if(hasToLog) {
-				logger.info("findBestAssignment - DOPO inner, ITERS:" + countIters);
-			}
-						
-			lastSwitchedOuter = pickupAzione.pushBack();
+
+			// Inner loop ended
+			logger.info("Inner loop ended after " + nIterInner + " iterations");
+			deliveryNode.unhook();
+
+			// Push the pickup back by one position
+			lastSwitchedOuter = pickupNode.pushBack();
+			logger.info("lastSwitchedOuter = " + lastSwitchedOuter + ", pickupNode.previous = " 
+					+ pickupNode.getPrevious() + ", pickupNode.next = " + pickupNode.getNext());
+			// If pickup was already at the end, break
 			if (lastSwitchedOuter == null) {
-				if(hasToLog) {
-					logger.info("findBestAssignment - BREKKATOOOOOOOO OUTERRRRRRRRR");
-				}
+				logger.info("Outer loop: reached last position for pickup");
 				break;
 			}
+			// Otherwise, if we went past a pickup, increase gropponeOuter
 			if(lastSwitchedOuter.getElement().getType() == Type.PICKUP) {
 				gropponeOuter += lastSwitchedOuter.getElement().getTask().weight;
 			}
+			// Otherwise, decrease gropponeOuter
 			else {
 				gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
 			}
 		}while(true);
-		
+
 		return bestSolution;
 	}
 
@@ -418,74 +411,121 @@ class Solution {
 	 */
 	private Solution findRandomAssignment(Vehicle oldVeh, Vehicle newVeh, Task task) {
 		Solution currentSolution = new Solution(this);
-		Node<Azione> pickupAzione = null;
-		Node<Azione> deliveryAzione = null;
-		Node<Azione> headAzione = currentSolution.firstActions.get(oldVeh);
-		Node<Azione> lastSwitchedOuter;
-		Node<Azione> lastSwitchedInner;
-		
-		for(Node<Azione> node : headAzione) {
-			if(node.getElement().getTask() != task) {
-				continue;
-			}
-			if(node.getElement().getType() == Type.PICKUP) {
-				pickupAzione = node;
-			}
-			else {
-				deliveryAzione = node;
-				break;
-			}
-		}
-				
+		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
+		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
+
+		// Unassign task from oldVeh
+		logger.info("Unassigning task from oldVeh");
+		currentSolution.unassignTask(oldVeh, task);
+		currentSolution.deltaNTasks(oldVeh, -1);
+		currentSolution.deltaNTasks(newVeh, +1);
+
 		int n = currentSolution.nTasks.get(newVeh);
-		int counter = coin.nextInt((2*n+1) * (n+1)); // number of max possible assignments of pickup and delivery 
+		// Upper bound on the number of possible positions of pickup and delivery
+		int counter = coin.nextInt((2*n+1) * (n+1));  
 
 		while(counter > 0) {
+			// Outer do-while: place pickupNode
+			logger.info("Begining outer loop");
+			pickupNode.unhook();
+			pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
+			// Variables for outer loop
+			Node<Azione> lastSwitchedOuter;
 			int gropponeOuter = 0;
-			int gropponeInner = 0;
-			pickupAzione.unhook();
-			deliveryAzione.unhook();
-			
-			headAzione = currentSolution.firstActions.get(newVeh);
-			pickupAzione.insertBefore(headAzione);
-			
 			do{
-				deliveryAzione.insertAfter(pickupAzione);
-				gropponeInner = gropponeOuter + task.weight;
-				
+				// Inner do-while: place deliveryNode
+				logger.info("Beginning inner loop");
+				deliveryNode.unhook();
+				deliveryNode.insertAfter(pickupNode);
+				// Variables for inner loop
+				Node<Azione> lastSwitchedInner;
+				int gropponeInner = gropponeOuter + task.weight;
 				do {
+					// Break right away if capacity exceeded: cannot delay delivery further
 					if(gropponeInner > newVeh.capacity()) {
+						logger.info("Inner loop: capacity exceeded. Breaking");
 						break;
 					}
-					
+
+					// Decrease counter
 					counter--;
-					
-					lastSwitchedInner = deliveryAzione.pushBack();
+
+					// Push the delivery back by one position
+					lastSwitchedInner = deliveryNode.pushBack();
+					// If delivery was already at the end, break
 					if (lastSwitchedInner == null) {
+						logger.info("Inner loop: reached last position for delivery");
 						break;
 					}
+					// Otherwise, if we went past a pickup, increase gropponeInner
 					if(lastSwitchedInner.getElement().getType() == Type.PICKUP) {
 						gropponeInner += lastSwitchedInner.getElement().getTask().weight;
 					}
+					// Otherwise, decrease gropponeInner
 					else {
 						gropponeInner -= lastSwitchedInner.getElement().getTask().weight;
 					}
-					
 				}while(true);
-				
-				lastSwitchedOuter = pickupAzione.pushBack();
+
+				// Inner loop ended
+				logger.info("Inner loop ended");
+				deliveryNode.unhook();
+
+				// Push the pickup back by one position
+				lastSwitchedOuter = pickupNode.pushBack();
+				// If pickup was already at the end, break
 				if (lastSwitchedOuter == null) {
+					logger.info("Outer loop: reached last position for pickup");
 					break;
 				}
+				// Otherwise, if we went past a pickup, increase gropponeOuter
 				if(lastSwitchedOuter.getElement().getType() == Type.PICKUP) {
 					gropponeOuter += lastSwitchedOuter.getElement().getTask().weight;
 				}
+				// Otherwise, decrease gropponeOuter
 				else {
 					gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
 				}
 			}while(true);
+
 		}
+
 		return currentSolution;
+	}
+
+
+	private void unassignTask(Vehicle vehicle, Task task) {
+		Node<Azione> pickupNode = null;
+		Node<Azione> deliveryNode = null;
+		Node<Azione> headNode = this.firstActions.get(vehicle);
+
+		// Find the pickup and the delivery nodes associated to task
+		logger.info("Finding pickupNode and deliveryNode");
+		for(Node<Azione> node : headNode) {
+			if(node.getElement().getTask() != task) {
+				continue;
+			}
+			if(node.getElement().getType() == Type.PICKUP) {
+				pickupNode = node;
+			} else {
+				deliveryNode = node;
+				break;
+			}
+		}
+
+		// Unhook them
+		logger.info("Unhooking pickupNode and deliveryNode");
+		pickupNode.unhook();
+		deliveryNode.unhook();
+
+		return;
+	}
+
+
+	private void deltaNTasks(Vehicle vehicle, int delta) {
+		int numTasks = this.nTasks.get(vehicle);
+		this.nTasks.put(vehicle, numTasks+delta);
+		return;
 	}
 
 
@@ -496,6 +536,7 @@ class Solution {
 	 * @return the cost of this solution, in constant time.
 	 */
 	double getCost() {
+		initCost();
 		return cost;
 	}
 
@@ -528,6 +569,73 @@ class Solution {
 	}
 
 
+	public void checkIntegrity() {
+		// Sum of the nTasks: must be totalTasks
+		int cumul = 0;
+
+		// Check every vehicle's integrity
+		for(Vehicle vehicle : vehicles) {
+			int numTasks = nTasks.get(vehicle);
+			int nPickup = 0;
+			int nDelivery = 0;
+
+			if(numTasks == 0) {
+				if(firstActions.get(vehicle) != null) {
+					throw new RuntimeException("Integrity error: first action is not null, but numTasks = " +
+							numTasks);
+				}
+				continue;
+			}
+
+			for(Node<Azione> node : firstActions.get(vehicle)) {
+				if(node.getElement().getType() == Type.PICKUP) {
+					nPickup++;
+				} else {
+					nDelivery++;
+				}
+			}
+
+			if(nPickup != nDelivery) {
+				throw new RuntimeException("Integrity error: nPickup != nDelivery. nPickup = " + nPickup + 
+						", nDelivery = " + nDelivery + ", numTasks = " + numTasks + ", vehicle = " + vehicle);
+			}
+			if(nPickup != numTasks) {
+				throw new RuntimeException("Integrity error: nDelivery == nPickup != numTasks. nPickup = " + 
+						nPickup + ", numTasks = " + numTasks + ", vehicle = " + vehicle);
+			}
+
+			cumul += numTasks;			
+		}
+
+		if(cumul != totalTasks) {
+			throw new RuntimeException("Integrity error: cumul != totalTasks. cumul = " + cumul +
+					", totalTasks = " + totalTasks);
+		}
+	}
+
+
+	/**
+	 * Computes the variation of the cost when going from the sequence of visited cities
+	 * A -> B -> C to the sequence A -> C.
+	 * @param costPerKm: the cost per unit distance of the vehicle
+	 * @param a: the first city in both sequences
+	 * @param b: the city to be removed
+	 * @param c: the city to be pulled ahead. Can be null.
+	 */
+	private void deltaCostUnhook(int costPerKm, City a, City b, City c) {
+		double delta = 0;
+
+		// If C is null, then we are just removing B from the end of the sequence
+		if(c != null) {
+			delta -= b.distanceTo(c);
+			delta += a.distanceTo(c);
+		}
+		delta -= a.distanceTo(b);
+
+		this.cost += delta * costPerKm;
+	}
+
+
 	/**
 	 * Computes the variation of the cost when going from the sequence of visited cities
 	 * A -> C to the sequence A -> B -> C.
@@ -535,9 +643,8 @@ class Solution {
 	 * @param a: the first city in both sequences
 	 * @param b: the city to be inserted in the middle
 	 * @param c: the city to be pushed back. Can be null.
-	 * @return
 	 */
-	private double deltaCostInsert(int costPerKm, City a, City b, City c) {
+	private void deltaCostInsert(int costPerKm, City a, City b, City c) {
 		double delta = 0;
 
 		// If C is null, then we are just appending B at the end of the sequence
@@ -547,7 +654,7 @@ class Solution {
 		}
 		delta += a.distanceTo(b);
 
-		return delta * costPerKm;
+		this.cost += delta * costPerKm;
 	}
 
 
@@ -559,9 +666,8 @@ class Solution {
 	 * @param b: the city to be pushed back
 	 * @param c: the city to be pulled ahead
 	 * @param d: the last city in both sequences. Can be null
-	 * @return
 	 */
-	private double deltaCostSwap(int costPerKm, City a, City b, City c, City d) {
+	private void deltaCostSwap(int costPerKm, City a, City b, City c, City d) {
 		double delta = 0;
 
 		// If D is null, then we are just swapping the last two cities in the sequence
@@ -574,7 +680,7 @@ class Solution {
 		delta += a.distanceTo(c);
 		delta += c.distanceTo(b);
 
-		return delta * costPerKm;
+		this.cost += delta * costPerKm;
 	}
 
 }

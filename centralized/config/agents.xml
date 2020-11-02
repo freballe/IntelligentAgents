@@ -18,7 +18,7 @@
 		<set timeout-margin="100"/>
 		
 		<!-- #### epsilon-greedy strategy ### -->
-		<set eps-thresh="0.4"/>
+		<set eps-thresh="0.0"/>
 		<set eps-rate="1000.0"/>
 	</agent>
 	

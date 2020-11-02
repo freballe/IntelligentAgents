@@ -18,7 +18,8 @@ import logist.topology.Topology;
  */
 class Planner {
 	private static final int ITERSTOLOG = 1;
-	private static final Level LOGLEVEL = Level.INFO;
+	private static final Level LOGLEVELPLAN = Level.INFO;
+	private static final Level LOGLEVELSOL = Level.ALL;
 	private List<Vehicle> vehicles;
 	private TaskSet tasks;
 	private Random coin;
@@ -37,10 +38,10 @@ class Planner {
 		this.epsRate = epsRate;
 		this.timeout = timeout;
 		
-		this.coin = new Random();
+		this.coin = new Random(42);
 		
 		this.logger = Logger.getLogger("affogalagoffa");
-		this.logger.setLevel(LOGLEVEL);
+		this.logger.setLevel(LOGLEVELPLAN);
 	}
 
 
@@ -60,6 +61,12 @@ class Planner {
 			if(nIter % ITERSTOLOG == 0) {
 				logger.info("Iteration " + nIter + ": elapsed time = " + elapsedTime + 	", current cost = " + 
 						currentSolution.getCost() + ", best cost = " + bestSolution.getCost());
+				
+				//currentSolution.checkIntegrity();
+				
+				Solution.logger.setLevel(LOGLEVELSOL);
+			} else {
+				Solution.logger.setLevel(Level.OFF);
 			}
 			
 			// Decrease epsilon over time, from a certain point in time
