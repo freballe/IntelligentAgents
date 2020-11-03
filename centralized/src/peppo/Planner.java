@@ -14,11 +14,11 @@ import logist.task.TaskSet;
  * A centralised planner using an epsilon-greedy (with decreasing epsilon) stochastic local search.
  */
 class Planner {
-	private static final int ITERSTOLOG = 1000;
+	private static final int ITERSTOLOG = 10000;
 	private static final int NUMRANDOMISE = 200;
 	private static final int NUMBEST = 200;
 	private static final int ITERSRESET = 1500;
-	private static final Level LOGLEVEL = Level.INFO;
+	private static final Level LOGLEVEL = Level.ALL;
 	private List<Vehicle> vehicles;
 	private TaskSet tasks;
 	private Random coin;
@@ -54,7 +54,7 @@ class Planner {
 		Solution currentSolution = new Solution(vehicles, tasks);
 		Solution bestSolution;
 		double epsilon;		// The probability to move to a random neighbour
-
+		
 		// Randomise currentSolution
 		for(int i = 0; i < NUMRANDOMISE; i++) {
 			currentSolution = currentSolution.getRandomNeighbour();
@@ -71,8 +71,6 @@ class Planner {
 			if(nIter % ITERSTOLOG == 0) {
 				logger.info("Iteration " + nIter + ": elapsed time = " + elapsedTime + 	", current cost = " + 
 						currentSolution.getCost() + ", best cost = " + bestSolution.getCost());
-
-				//currentSolution.checkIntegrity();
 			}
 
 			// If too long since we found the best, reset to best
@@ -82,8 +80,11 @@ class Planner {
 				itersSinceBest = 0;
 			}
 
+			/*
 			// Decrease epsilon over time, from a certain point in time
 			epsilon = Math.min(epsThresh, epsRate/nIter);
+			*/
+			epsilon = epsThresh;
 
 			// Toss a coin
 			if(coin.nextDouble() < epsilon) {

@@ -33,11 +33,13 @@ class Solution {
 	private double cost;
 	// PRNG
 	private Random coin;
-	public final static Logger logger = Logger.getLogger("diomaiala");
+	private final static Logger logger = Logger.getLogger("diomaiala");
+
 
 	static {
 		logger.setLevel(LOGLEVEL);
 	}
+	
 
 	/* CONSTRUCTORS */
 
@@ -147,6 +149,8 @@ class Solution {
 
 			// If no tasks to deliver, skip
 			if(nTasks.get(vehicle) == 0) {
+				// Append the plan to the end of joint plan
+				jointPlan.add(plan);
 				continue;
 			}
 
@@ -183,10 +187,10 @@ class Solution {
 		Solution currentNeighbour;
 
 		// Find a vehicle with at least a task
-		logger.info("Vamos a getRandomVehicle");
+		logger.fine("Vamos a getRandomVehicle");
 		vez = getRandomVehicle();
 		// Get one of its tasks a random
-		logger.info("Vamos a getRandomTask");
+		logger.fine("Vamos a getRandomTask");
 		taz = getRandomTask(vez);
 
 		// Try all possible reorderings of taz within vez
@@ -200,7 +204,7 @@ class Solution {
 		}
 
 		// Get a different random vehicle
-		logger.info("Vamos a ghettare un different randomVehicle");
+		logger.fine("Vamos a ghettare un different randomVehicle");
 		Vehicle zio = vez;
 		int i;
 		for(i = 0; (i < MAXDIFFVEHICLES) && (zio == vez || zio.capacity() < taz.weight); i++) {
@@ -229,14 +233,14 @@ class Solution {
 		Task taz;
 
 		// Find a vehicle with at least a task
-		logger.info("Vamos a getRandomVehicle");
+		logger.fine("Vamos a getRandomVehicle");
 		vez = getRandomVehicle();
 		// Get one of its tasks a random
-		logger.info("Vamos a getRandomTask");
+		logger.fine("Vamos a getRandomTask");
 		taz = getRandomTask(vez);
 
 		// Get another random vehicle that can carry task
-		logger.info("Vamos a ghettare un different randomVehicle");
+		logger.fine("Vamos a ghettare un different randomVehicle");
 		Vehicle zio = vez;
 		int i;
 		for(i = 0; (i < MAXDIFFVEHICLES) && (zio.capacity() < taz.weight); i++) {
@@ -320,15 +324,15 @@ class Solution {
 		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
 		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
 		
-		if(logger.isLoggable(Level.INFO)) {
-			logger.info("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
+		if(logger.isLoggable(Level.FINE)) {
+			logger.fine("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
+			currentSolution.checkIntegrity();
 		}
-		currentSolution.checkIntegrity();
 
-		logger.info("oldVeh = " + oldVeh + ", newVeh = " + newVeh);
+		logger.fine("oldVeh = " + oldVeh + ", newVeh = " + newVeh);
 
 		// Unassign task from oldVeh
-		logger.info("Unassigning task from oldVeh");
+		logger.fine("Unassigning task from oldVeh");
 		//currentSolution.checkIntegrity();
 		currentSolution.unassignTask(oldVeh, task);	// Until the end of the loop, currentSolution.nTasks is wrong
 		//currentSolution.deltaNTasks(oldVeh, -1);
@@ -338,7 +342,7 @@ class Solution {
 		bestSolution = new Solution(this);
 
 		// Outer do-while: place pickupNode
-		logger.info("Begining outer loop");
+		logger.fine("Begining outer loop");
 		pickupNode.unhook();
 		pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
 		currentSolution.firstActions.put(newVeh, pickupNode);
@@ -348,7 +352,7 @@ class Solution {
 		int nIterOuter = 0;
 		do{
 			// Inner do-while: place deliveryNode
-			logger.info("Outer iteration " + nIterOuter++ + ".Beginning inner loop.");
+			logger.fine("Outer iteration " + nIterOuter++ + ".Beginning inner loop.");
 			deliveryNode.unhook();
 			deliveryNode.insertAfter(pickupNode);
 			// Variables for inner loop
@@ -356,33 +360,33 @@ class Solution {
 			int gropponeInner = gropponeOuter + task.weight;
 			int nIterInner = 0;
 			do {
-				logger.info("Inner iteration " + nIterInner++);
+				logger.fine("Inner iteration " + nIterInner++);
 
 				// Break right away if capacity exceeded: cannot delay delivery further
 				if(gropponeInner > newVeh.capacity()) {
-					logger.info("Inner loop: capacity exceeded. Breaking");
+					logger.fine("Inner loop: capacity exceeded. Breaking");
 					break;
 				}
 
 				// Copy in bestSolution if currentSolution is better
 				if(bestSolution.getCost() > currentSolution.getCost()) {
-					logger.info("Inner loop: found better solution. Copying");
+					logger.fine("Inner loop: found better solution. Copying");
 					//currentSolution.checkIntegrity();
 					bestSolution = new Solution(currentSolution);
-					if(logger.isLoggable(Level.INFO)) {
-						logger.info("DENTROOO FINDBEST: nTotalTasks = " + bestSolution.getNumTasks());
-						logger.info("DENTROOO FINDBEST: isTaskStillPresent = " + 
+					if(logger.isLoggable(Level.FINE)) {
+						logger.fine("DENTROOO FINDBEST: nTotalTasks = " + bestSolution.getNumTasks());
+						logger.fine("DENTROOO FINDBEST: isTaskStillPresent = " + 
 								bestSolution.isTaskPresent(task));
 					}
 				}
 
 				// Push the delivery back by one position
 				lastSwitchedInner = deliveryNode.pushBack();
-				logger.info("lastSwitchedInner = " + lastSwitchedInner + ", deliveryNode.previous = " 
+				logger.fine("lastSwitchedInner = " + lastSwitchedInner + ", deliveryNode.previous = " 
 						+ deliveryNode.getPrevious() + ", deliveryNode.next = " + deliveryNode.getNext());
 				// If delivery was already at the end, break
 				if (lastSwitchedInner == null) {
-					logger.info("Inner loop: reached last position for delivery");
+					logger.fine("Inner loop: reached last position for delivery");
 					break;
 				}
 				// Otherwise, if we went past a pickup, increase gropponeInner
@@ -396,7 +400,7 @@ class Solution {
 			}while(true);
 
 			// Inner loop ended
-			logger.info("Inner loop ended after " + nIterInner + " iterations");
+			logger.fine("Inner loop ended after " + nIterInner + " iterations");
 			deliveryNode.unhook();
 
 			// Push the pickup back by one position
@@ -405,11 +409,11 @@ class Solution {
 			if(currentSolution.firstActions.get(newVeh) == pickupNode && pickupNode.getPrevious() != null) {
 				currentSolution.firstActions.put(newVeh, pickupNode.getPrevious());
 			}
-			logger.info("lastSwitchedOuter = " + lastSwitchedOuter + ", pickupNode.previous = " 
+			logger.fine("lastSwitchedOuter = " + lastSwitchedOuter + ", pickupNode.previous = " 
 					+ pickupNode.getPrevious() + ", pickupNode.next = " + pickupNode.getNext());
 			// If pickup was already at the end, break
 			if (lastSwitchedOuter == null) {
-				logger.info("Outer loop: reached last position for pickup");
+				logger.fine("Outer loop: reached last position for pickup");
 				break;
 			}
 			// Otherwise, if we went past a pickup, increase gropponeOuter
@@ -423,11 +427,11 @@ class Solution {
 		}while(true);
 
 		bestSolution.updateNTasks();
-		if(logger.isLoggable(Level.INFO)) {
-			logger.info("FINE FINDBEST: nTotalTasks = " + bestSolution.getNumTasks());
-			logger.info("FINE FINDBEST: isTaskStillPresent = " + bestSolution.isTaskPresent(task));
+		if(logger.isLoggable(Level.FINE)) {
+			logger.fine("FINE FINDBEST: nTotalTasks = " + bestSolution.getNumTasks());
+			logger.fine("FINE FINDBEST: isTaskStillPresent = " + bestSolution.isTaskPresent(task));
+			bestSolution.checkIntegrity();
 		}
-		bestSolution.checkIntegrity();
 		return bestSolution;
 	}
 
@@ -492,13 +496,13 @@ class Solution {
 		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
 		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
 		
-		if(logger.isLoggable(Level.INFO)) {
-			logger.info("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
+		if(logger.isLoggable(Level.FINE)) {
+			logger.fine("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
+			currentSolution.checkIntegrity();
 		}
-		currentSolution.checkIntegrity();
-
+		
 		// Unassign task from oldVeh
-		logger.info("Unassigning task from oldVeh");
+		logger.fine("Unassigning task from oldVeh");
 		currentSolution.unassignTask(oldVeh, task);	// Until the end of the loop, currentSolution.nTasks is wrong
 		//currentSolution.deltaNTasks(oldVeh, -1);
 		//currentSolution.deltaNTasks(newVeh, +1);
@@ -507,93 +511,104 @@ class Solution {
 		// Upper bound on the number of possible positions of pickup and delivery
 		int counter = coin.nextInt((2*n+1) * (n+1));  
 
-		while(true) {
-			// Outer do-while: place pickupNode
-			logger.info("Begining outer loop");
-			pickupNode.unhook();
-			pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
-			currentSolution.firstActions.put(newVeh, pickupNode);
-			// Variables for outer loop
-			Node<Azione> lastSwitchedOuter;
-			int gropponeOuter = 0;
-			int nIterOuter = 0;
-			do{
-				// Inner do-while: place deliveryNode
-				logger.info("Outer iteration " + nIterOuter++ + ".Beginning inner loop.");
-				deliveryNode.unhook();
-				deliveryNode.insertAfter(pickupNode);
-				// Variables for inner loop
-				Node<Azione> lastSwitchedInner;
-				int gropponeInner = gropponeOuter + task.weight;
-				int nIterInner = 0;
-				do {
-					logger.info("Inner iteration " + nIterInner++);
+		// Outer do-while: place pickupNode
+		logger.fine("Begining outer loop");
+		pickupNode.unhook();
+		pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
+		currentSolution.firstActions.put(newVeh, pickupNode);
+		// Variables for outer loop
+		Node<Azione> lastSwitchedOuter;
+		int gropponeOuter = 0;
+		int nIterOuter = 0;
+		do{
+			// Inner do-while: place deliveryNode
+			logger.fine("Outer iteration " + nIterOuter++ + ".Beginning inner loop.");
+			deliveryNode.unhook();
+			deliveryNode.insertAfter(pickupNode);
+			// Variables for inner loop
+			Node<Azione> lastSwitchedInner;
+			int gropponeInner = gropponeOuter + task.weight;
+			int nIterInner = 0;
+			do {
+				logger.fine("Inner iteration " + nIterInner++);
 
-					// Break right away if capacity exceeded: cannot delay delivery further
-					if(gropponeInner > newVeh.capacity()) {
-						logger.info("Inner loop: capacity exceeded. Breaking");
-						break;
-					}
-
-					counter--;
-					if(counter == 0) {
-						currentSolution.updateNTasks();
-						if(logger.isLoggable(Level.INFO)) {
-							logger.info("FINE FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
-							logger.info("FINE FINDBEST: isTaskStillPresent = " + 
-									currentSolution.isTaskPresent(task));
-						}
-						currentSolution.checkIntegrity();
-						return currentSolution;
-					}
-
-					// Push the delivery back by one position
-					lastSwitchedInner = deliveryNode.pushBack();
-					logger.info("lastSwitchedInner = " + lastSwitchedInner + ", deliveryNode.previous = " 
-							+ deliveryNode.getPrevious() + ", deliveryNode.next = " + deliveryNode.getNext());
-					// If delivery was already at the end, break
-					if (lastSwitchedInner == null) {
-						logger.info("Inner loop: reached last position for delivery");
-						break;
-					}
-					// Otherwise, if we went past a pickup, increase gropponeInner
-					if(lastSwitchedInner.getElement().getType() == Type.PICKUP) {
-						gropponeInner += lastSwitchedInner.getElement().getTask().weight;
-					}
-					// Otherwise, decrease gropponeInner
-					else {
-						gropponeInner -= lastSwitchedInner.getElement().getTask().weight;
-					}
-				}while(true);
-
-				// Inner loop ended
-				logger.info("Inner loop ended after " + nIterInner + " iterations");
-				deliveryNode.unhook();
-
-				// Push the pickup back by one position
-				lastSwitchedOuter = pickupNode.pushBack();
-				// Notify to firstActions that pickupNode has been pushed back
-				if(currentSolution.firstActions.get(newVeh) == pickupNode && pickupNode.getPrevious() != null) {
-					currentSolution.firstActions.put(newVeh, pickupNode.getPrevious());
-				}
-				logger.info("lastSwitchedOuter = " + lastSwitchedOuter + ", pickupNode.previous = " 
-						+ pickupNode.getPrevious() + ", pickupNode.next = " + pickupNode.getNext());
-				// If pickup was already at the end, break
-				if (lastSwitchedOuter == null) {
-					logger.info("Outer loop: reached last position for pickup");
+				// Break right away if capacity exceeded: cannot delay delivery further
+				if(gropponeInner > newVeh.capacity()) {
+					logger.fine("Inner loop: capacity exceeded. Breaking");
 					break;
 				}
-				// Otherwise, if we went past a pickup, increase gropponeOuter
-				if(lastSwitchedOuter.getElement().getType() == Type.PICKUP) {
-					gropponeOuter += lastSwitchedOuter.getElement().getTask().weight;
+
+				counter--;
+				if(counter == 0) {
+					currentSolution.updateNTasks();
+					if(logger.isLoggable(Level.FINE)) {
+						logger.fine("FINE FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
+						logger.fine("FINE FINDBEST: isTaskStillPresent = " + 
+								currentSolution.isTaskPresent(task));
+						currentSolution.checkIntegrity();
+					}
+				
+					return currentSolution;
 				}
-				// Otherwise, decrease gropponeOuter
+
+				// Push the delivery back by one position
+				lastSwitchedInner = deliveryNode.pushBack();
+				logger.fine("lastSwitchedInner = " + lastSwitchedInner + ", deliveryNode.previous = " 
+						+ deliveryNode.getPrevious() + ", deliveryNode.next = " + deliveryNode.getNext());
+				// If delivery was already at the end, break
+				if (lastSwitchedInner == null) {
+					logger.fine("Inner loop: reached last position for delivery");
+					break;
+				}
+				// Otherwise, if we went past a pickup, increase gropponeInner
+				if(lastSwitchedInner.getElement().getType() == Type.PICKUP) {
+					gropponeInner += lastSwitchedInner.getElement().getTask().weight;
+				}
+				// Otherwise, decrease gropponeInner
 				else {
-					gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
+					gropponeInner -= lastSwitchedInner.getElement().getTask().weight;
 				}
 			}while(true);
 
+			// Inner loop ended
+			logger.fine("Inner loop ended after " + nIterInner + " iterations");
+			deliveryNode.unhook();
+
+			// Push the pickup back by one position
+			lastSwitchedOuter = pickupNode.pushBack();
+			// Notify to firstActions that pickupNode has been pushed back
+			if(currentSolution.firstActions.get(newVeh) == pickupNode && pickupNode.getPrevious() != null) {
+				currentSolution.firstActions.put(newVeh, pickupNode.getPrevious());
+			}
+			logger.fine("lastSwitchedOuter = " + lastSwitchedOuter + ", pickupNode.previous = " 
+					+ pickupNode.getPrevious() + ", pickupNode.next = " + pickupNode.getNext());
+			// If pickup was already at the end, break
+			if (lastSwitchedOuter == null) {
+				logger.fine("Outer loop: reached last position for pickup");
+				break;
+			}
+			// Otherwise, if we went past a pickup, increase gropponeOuter
+			if(lastSwitchedOuter.getElement().getType() == Type.PICKUP) {
+				gropponeOuter += lastSwitchedOuter.getElement().getTask().weight;
+			}
+			// Otherwise, decrease gropponeOuter
+			else {
+				gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
+			}
+		}while(true);
+		
+		// If we haven't yet found anything, just return
+		deliveryNode.insertAfter(pickupNode);
+		currentSolution.updateNTasks();
+		if(logger.isLoggable(Level.FINE)) {
+			logger.fine("FINE FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
+			logger.fine("FINE FINDBEST: isTaskStillPresent = " + 
+					currentSolution.isTaskPresent(task));
+			currentSolution.checkIntegrity();
 		}
+	
+		return currentSolution;
+
 	}
 
 
@@ -603,7 +618,7 @@ class Solution {
 		Node<Azione> headNode = this.firstActions.get(vehicle);
 
 		// Find the pickup and the delivery nodes associated to task
-		logger.info("Finding pickupNode and deliveryNode");
+		logger.fine("Finding pickupNode and deliveryNode");
 		for(Node<Azione> node : headNode) {
 			if(node.getElement().getTask() != task) {
 				continue;
@@ -635,7 +650,7 @@ class Solution {
 		}
 
 		// Unhook them
-		logger.info("Unhooking pickupNode and deliveryNode");
+		logger.fine("Unhooking pickupNode and deliveryNode");
 		pickupNode.unhook();
 		deliveryNode.unhook();
 
