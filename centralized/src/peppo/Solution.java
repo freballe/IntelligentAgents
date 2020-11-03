@@ -414,6 +414,9 @@ class Solution {
 	private boolean isTaskPresent(Task task) {
 		boolean found = false;
 		for(Vehicle vehicle : vehicles) {
+			if(firstActions.get(vehicle) == null) {
+				continue;
+			}
 			for(Node<Azione> node : firstActions.get(vehicle)) {
 				if(node.getElement().getTask() == task) {
 					found = true;
@@ -444,9 +447,13 @@ class Solution {
 	private int getNumTasks() {
 		int numTasks = 0;
 		for(Vehicle vehicle : vehicles) {
-			for(Node<Azione> node : firstActions.get(vehicle)) {
-				numTasks++;
-			}				
+			if(firstActions.get(vehicle) == null) {
+				numTasks = 0;
+			}else {
+				for(Node<Azione> node : firstActions.get(vehicle)) {
+					numTasks++;
+				}
+			}
 		}
 		return numTasks/2;
 	}
