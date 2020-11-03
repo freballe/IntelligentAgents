@@ -1,6 +1,5 @@
 package peppo;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
@@ -8,18 +7,18 @@ import java.util.logging.Logger;
 
 import logist.plan.Plan;
 import logist.simulation.Vehicle;
-import logist.task.TaskDistribution;
 import logist.task.TaskSet;
-import logist.topology.Topology;
 
 
 /**
  * A centralised planner using an epsilon-greedy (with decreasing epsilon) stochastic local search.
  */
 class Planner {
-	private static final int ITERSTOLOG = 1;
-	private static final Level LOGLEVELPLAN = Level.INFO;
-	private static final Level LOGLEVELSOL = Level.OFF;
+	private static final int ITERSTOLOG = 1000;
+	private static final int NUMRANDOMISE = 200;
+	private static final int NUMBEST = 200;
+	private static final int ITERSRESET = 1500;
+	private static final Level LOGLEVEL = Level.INFO;
 	private List<Vehicle> vehicles;
 	private TaskSet tasks;
 	private Random coin;
@@ -27,9 +26,9 @@ class Planner {
 	private double epsRate;		// The value of epsilon eventually decreases as epsRate/t
 	private long timeout;
 	private Logger logger;
-	
-	
-	
+
+
+
 	Planner(List<Vehicle> vehicles, TaskSet tasks, double epsThresh, double epsRate, long timeout) {
 		super();
 		this.vehicles = vehicles;
@@ -37,11 +36,11 @@ class Planner {
 		this.epsThresh = epsThresh;
 		this.epsRate = epsRate;
 		this.timeout = timeout;
-		
+
 		this.coin = new Random(42);
-		
+
 		this.logger = Logger.getLogger("affogalagoffa");
-		this.logger.setLevel(LOGLEVELPLAN);
+		this.logger.setLevel(LOGLEVEL);
 	}
 
 
@@ -53,25 +52,39 @@ class Planner {
 		long startTime = System.currentTimeMillis();
 		long elapsedTime = 0L;
 		Solution currentSolution = new Solution(vehicles, tasks);
-		Solution bestSolution = currentSolution;
+		Solution bestSolution;
 		double epsilon;		// The probability to move to a random neighbour
-		
+
+		// Randomise currentSolution
+		for(int i = 0; i < NUMRANDOMISE; i++) {
+			currentSolution = currentSolution.getRandomNeighbour();
+		}
+		// Improve currentSolution
+		for(int i = 0; i < NUMBEST; i++) {
+			currentSolution = currentSolution.getBestNeighbour();
+		}
+		bestSolution = currentSolution;
+
+		int itersSinceBest = 0;
 		for(int nIter = 1; elapsedTime < timeout; nIter++) {
 			// Do not log all iterations
 			if(nIter % ITERSTOLOG == 0) {
 				logger.info("Iteration " + nIter + ": elapsed time = " + elapsedTime + 	", current cost = " + 
 						currentSolution.getCost() + ", best cost = " + bestSolution.getCost());
-				
+
 				//currentSolution.checkIntegrity();
-				
-				Solution.logger.setLevel(LOGLEVELSOL);
-			} else {
-				Solution.logger.setLevel(Level.OFF);
 			}
-			
+
+			// If too long since we found the best, reset to best
+			if(itersSinceBest >= ITERSRESET) {
+				logger.info("Too long since we found bestSolution: resetting current to best");
+				currentSolution = bestSolution;
+				itersSinceBest = 0;
+			}
+
 			// Decrease epsilon over time, from a certain point in time
 			epsilon = Math.min(epsThresh, epsRate/nIter);
-			
+
 			// Toss a coin
 			if(coin.nextDouble() < epsilon) {
 				// With probability epsilon, move to random neighbour
@@ -87,16 +100,20 @@ class Planner {
 				}
 				currentSolution = currentSolution.getBestNeighbour();
 			}
-			
+
+			// Increase itersSinceBest
+			itersSinceBest++;
+
 			// Update bestSolution, if necessary
 			if(currentSolution.getCost() < bestSolution.getCost()) {
 				bestSolution = currentSolution;
+				itersSinceBest = 0;
 			}
-			
+
 			elapsedTime = System.currentTimeMillis() - startTime;
 		}
-		
+
 		return bestSolution.getJointPlan();
 	}
-	
+
 }
