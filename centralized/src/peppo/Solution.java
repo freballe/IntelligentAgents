@@ -276,7 +276,6 @@ class Solution {
 	private Task getRandomTask(Vehicle vehicle) {
 		// Random int between 0 and nTasks-1
 		int taskNum = coin.nextInt(nTasks.get(vehicle));
-
 		// We return when we encounter the taskNum-th pickup
 		int nPickup = 0;
 		for(Node<Azione> node : firstActions.get(vehicle)) {
@@ -306,6 +305,8 @@ class Solution {
 	 */
 	private Solution findBestAssignment(Vehicle oldVeh, Vehicle newVeh, Task task) {
 		Solution currentSolution = new Solution(this);
+		currentSolution.checkIntegrity();
+		logger.info("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
 		Solution bestSolution;
 		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
 		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
@@ -314,10 +315,10 @@ class Solution {
 
 		// Unassign task from oldVeh
 		logger.info("Unassigning task from oldVeh");
-		currentSolution.checkIntegrity();
+		//currentSolution.checkIntegrity();
 		currentSolution.unassignTask(oldVeh, task);
-		currentSolution.deltaNTasks(oldVeh, -1);
-		currentSolution.deltaNTasks(newVeh, +1);
+		//currentSolution.deltaNTasks(oldVeh, -1);
+		//currentSolution.deltaNTasks(newVeh, +1);
 
 		// Initialise bestSolution
 		bestSolution = new Solution(this);
@@ -326,11 +327,15 @@ class Solution {
 		logger.info("Begining outer loop");
 		pickupNode.unhook();
 		pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
+		currentSolution.firstActions.put(newVeh, pickupNode);
 		// Variables for outer loop
 		Node<Azione> lastSwitchedOuter;
 		int gropponeOuter = 0;
 		int nIterOuter = 0;
 		do{
+			if(currentSolution.firstActions.get(newVeh) == pickupNode && pickupNode.getPrevious() != null) {
+				currentSolution.firstActions.put(newVeh, pickupNode.getPrevious());
+			}
 			// Inner do-while: place deliveryNode
 			logger.info("Outer iteration " + nIterOuter++ + ".Beginning inner loop.");
 			deliveryNode.unhook();
@@ -351,8 +356,10 @@ class Solution {
 				// Copy in bestSolution if currentSolution is better
 				if(bestSolution.getCost() > currentSolution.getCost()) {
 					logger.info("Inner loop: found better solution. Copying");
-					currentSolution.checkIntegrity();
+					//currentSolution.checkIntegrity();
 					bestSolution = new Solution(currentSolution);
+					logger.info("DENTROOO FINDBEST: nTotalTasks = " + bestSolution.getNumTasks());
+					logger.info("DENTROOO FINDBEST: isTaskStillPresent = " + bestSolution.isTaskPresent(task));
 				}
 
 				// Push the delivery back by one position
@@ -397,9 +404,52 @@ class Solution {
 			}
 		}while(true);
 
+		bestSolution.updateNTasks();
+		logger.info("FINE FINDBEST: nTotalTasks = " + bestSolution.getNumTasks());
+		logger.info("FINE FINDBEST: isTaskStillPresent = " + bestSolution.isTaskPresent(task));
+		bestSolution.checkIntegrity();
 		return bestSolution;
 	}
+ 
+	private boolean isTaskPresent(Task task) {
+		boolean found = false;
+		for(Vehicle vehicle : vehicles) {
+			for(Node<Azione> node : firstActions.get(vehicle)) {
+				if(node.getElement().getTask() == task) {
+					found = true;
+					break;
+				}
+			}				
+		} 
+		return found;
+	}
 
+
+	private void updateNTasks() {
+		// Check every vehicle's integrity
+		for(Vehicle vehicle : vehicles) {
+			int numTasks = 0;
+			if(firstActions.get(vehicle) == null) {
+				numTasks = 0;
+			}else {
+				for(Node<Azione> node : firstActions.get(vehicle)) {
+					numTasks++;
+				}				
+			}
+			this.nTasks.put(vehicle, numTasks/2);
+		}
+	}
+	
+	// return number of tasks in the system
+	private int getNumTasks() {
+		int numTasks = 0;
+		for(Vehicle vehicle : vehicles) {
+			for(Node<Azione> node : firstActions.get(vehicle)) {
+				numTasks++;
+			}				
+		}
+		return numTasks/2;
+	}
 
 	/**
 	 * Copies the current solution, then takes out task from oldVeh, and assigns it in a 
@@ -417,8 +467,8 @@ class Solution {
 		// Unassign task from oldVeh
 		logger.info("Unassigning task from oldVeh");
 		currentSolution.unassignTask(oldVeh, task);
-		currentSolution.deltaNTasks(oldVeh, -1);
-		currentSolution.deltaNTasks(newVeh, +1);
+		//currentSolution.deltaNTasks(oldVeh, -1);
+		//currentSolution.deltaNTasks(newVeh, +1);
 
 		int n = currentSolution.nTasks.get(newVeh);
 		// Upper bound on the number of possible positions of pickup and delivery
@@ -429,6 +479,7 @@ class Solution {
 			logger.info("Begining outer loop");
 			pickupNode.unhook();
 			pickupNode.insertBefore(currentSolution.firstActions.get(newVeh));
+			currentSolution.firstActions.put(newVeh, pickupNode);
 			// Variables for outer loop
 			Node<Azione> lastSwitchedOuter;
 			int gropponeOuter = 0;
@@ -489,7 +540,7 @@ class Solution {
 			}while(true);
 
 		}
-
+		currentSolution.updateNTasks();
 		return currentSolution;
 	}
 

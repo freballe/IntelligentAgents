@@ -19,7 +19,7 @@ import logist.topology.Topology;
 class Planner {
 	private static final int ITERSTOLOG = 1;
 	private static final Level LOGLEVELPLAN = Level.INFO;
-	private static final Level LOGLEVELSOL = Level.ALL;
+	private static final Level LOGLEVELSOL = Level.OFF;
 	private List<Vehicle> vehicles;
 	private TaskSet tasks;
 	private Random coin;
