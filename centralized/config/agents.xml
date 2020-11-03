@@ -15,10 +15,10 @@
 		<set class-name="peppo.MyCentralised"/>
 		
 		<!-- #### timeout margin ### -->
-		<set timeout-margin="100"/>
+		<set timeout-margin="250"/>
 		
 		<!-- #### epsilon-greedy strategy ### -->
-		<set eps-thresh="0.3"/>
+		<set eps-thresh="0.2"/>
 		<set eps-rate="6000.0"/>
 	</agent>
 	

@@ -17,7 +17,7 @@ class Planner {
 	private static final int ITERSTOLOG = 10000;
 	private static final int NUMRANDOMISE = 200;
 	private static final int NUMBEST = 200;
-	private static final int ITERSRESET = 1500;
+	private static final int ITERSRESET = 300;
 	private static final Level LOGLEVEL = Level.ALL;
 	private List<Vehicle> vehicles;
 	private TaskSet tasks;
