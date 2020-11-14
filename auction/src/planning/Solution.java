@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
+import logist.task.TaskSet;
 import logist.topology.Topology.City;
 import planning.Azione.Type;
 
@@ -132,6 +133,27 @@ public class Solution {
 		return;
 	}
 
+	
+	public void updateTasks(TaskSet tasks) {
+		Map<Integer, Task> idToNewTask = new HashMap<>();
+		for(Task task : tasks) {
+			idToNewTask.put(task.id, task);
+		}
+		
+		for(Vehicle vehicle : vehicles) {
+			Node<Azione> head = firstActions.get(vehicle);
+			if(head == null) {
+				continue;
+			}
+			for(Node<Azione> node : head) {
+				Task oldTask = node.getElement().getTask();
+				Task newTask = idToNewTask.get(oldTask.id);
+				node.getElement().setTask(newTask);
+			}
+		}
+		
+		
+	}
 
 	/* SLS METHODS */	
 

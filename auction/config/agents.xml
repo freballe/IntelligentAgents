@@ -2,7 +2,10 @@
 
 <agents>
 	<!-- A list of agents and their behavior classes -->
-	
+	<agent name="auction-random">
+		<set class-path="bin/"/>
+		<set class-name="template.AuctionTemplate"/>
+	</agent>
 	<!-- #### AUCTION AGENTS ### -->
 	<agent name="auction-main-47">
 		<set class-path="bin/"/>

@@ -14,10 +14,11 @@ import logist.task.Task;
  * A centralised planner using an epsilon-greedy (with decreasing epsilon) stochastic local search.
  */
 public class Planner {
-	private static final int ITERSTOLOG = 10000;
+	private static final int ITERSTOLOG = 100000;
 	private static final int NUMRANDOMISE = 200;
 	private static final int NUMBEST = 200;
-	private static final int ITERSRESET = 300;
+	private static final int ITERSRESET = 1000;
+	private static final int RESETSTOLOG = ITERSTOLOG / ITERSRESET;
 	private static final Level LOGLEVEL = Level.ALL;
 	private List<Vehicle> vehicles;
 	private Random coin;
@@ -57,6 +58,7 @@ public class Planner {
 		bestSolution = currentSolution;
 
 		int itersSinceBest = 0;
+		int nReset = 0;
 		for(int nIter = 1; elapsedTime < timeout; nIter++) {
 			// Do not log all iterations
 			if(nIter % ITERSTOLOG == 0) {
@@ -66,9 +68,12 @@ public class Planner {
 
 			// If too long since we found the best, reset to best
 			if(itersSinceBest >= ITERSRESET) {
-				logger.info("Too long since we found bestSolution: resetting current to best");
+				nReset ++;
+				if(nReset % RESETSTOLOG == 0) {
+					logger.info("Too long since we found bestSolution: resetting current to best");
+				}
 				currentSolution = bestSolution;
-				itersSinceBest = 0;
+				itersSinceBest = 0;	
 			}
 
 			

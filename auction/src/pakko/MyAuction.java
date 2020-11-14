@@ -31,14 +31,9 @@ import planning.Solution;
  */
 @SuppressWarnings("unused")
 public class MyAuction implements AuctionBehavior {
-
-	private static long defaultMarginalCost;
-	private static double gainFactor;
-
 	private Topology topology;
 	private TaskDistribution distribution;
 	private Agent agent;
-	private Random random;
 	private List<Vehicle> vehicles;
 
 	private long timeoutBid;
@@ -50,6 +45,8 @@ public class MyAuction implements AuctionBehavior {
 	private Solution currentSolution;
 	private Task pendingTask;
 	private Solution pendingSolution;
+	
+	private Prezzer prezzer;
 
 
 	@Override
@@ -75,14 +72,6 @@ public class MyAuction implements AuctionBehavior {
 		Double epsilonName = agent.readProperty("epsilon", Double.class, 0.2);
 		this.epsilon = epsilonName.doubleValue();
 
-		// Reads the user-chosen default marginal cost from the configuration file
-		Long defMargCostName = agent.readProperty("def-marg-cost", Long.class, 1000L);
-		MyAuction.defaultMarginalCost = defMargCostName.longValue();
-
-		// Reads the user-chosen default marginal cost from the configuration file
-		Double maxGainName = agent.readProperty("gain-factor", Double.class, 0.05);
-		MyAuction.gainFactor = maxGainName.doubleValue();
-
 		this.topology = topology;
 		this.distribution = distribution;
 		this.agent = agent;
@@ -93,17 +82,16 @@ public class MyAuction implements AuctionBehavior {
 		this.currentSolution = null;
 		this.pendingTask = null;
 		this.pendingSolution = null;
-
-		long seed = -9019554669489983951L * this.vehicles.get(0).getCurrentCity().hashCode() * agent.id();
-		this.random = new Random(seed);
+		
+		this.prezzer = new Prezzer(vehicles, agent);
 	}
 
 
 	@Override
 	public void auctionResult(Task previous, int winner, Long[] bids) {
 		// Is previous == pendingTask?
-		if(previous != pendingTask) {
-			throw new RuntimeException("Provided previous is not the same as pendingTask");
+		if(previous.id != pendingTask.id) {
+			throw new RuntimeException("Provided previous is not the same as pendingTask. Previous: " + previous + ", PendingTask: "+ pendingTask);
 		}
 		// Is pendingSolution != null?
 		if(pendingSolution == null) {
@@ -113,21 +101,27 @@ public class MyAuction implements AuctionBehavior {
 		if(!wonAndPendingTasks.contains(pendingTask)) {
 			throw new RuntimeException("wonAndPendingTasks does not contain pendingTask");
 		}
-
+		
 		if (winner == agent.id()) {
+			System.out.println("auctionResult WON task: " + previous);	
 			currentSolution = pendingSolution;
 		} else {
+			System.out.println("auctionResult LOST task: " + previous);
 			wonAndPendingTasks.remove(pendingTask);
 		}
 		pendingTask = null;
 		pendingSolution = null;
-
+		
+		prezzer.auctionResult(previous, winner, bids);
+		
 		return;
 	}
 
 
 	@Override
 	public Long askPrice(Task task) {
+		System.out.println("askPrice task: " +  task);
+		
 		// Is pendingTask == null?
 		if(pendingTask != null) {
 			throw new RuntimeException("pendingTasks is not null");
@@ -155,15 +149,11 @@ public class MyAuction implements AuctionBehavior {
 
 		// Compute marginal cost
 		double marginalCost = pendingSolution.getCost() - currentCost;
-		// Default marginal cost if <= 0
-		if(marginalCost <= 0) {
-			marginalCost = defaultMarginalCost;
-		}
-
-		// Compute price to ask
-		double ratio = 1.0 + (random.nextDouble() * MyAuction.gainFactor * task.id);
-		double bid = ratio * marginalCost;
-
+		
+		Long bid = prezzer.askPrice(marginalCost);
+		
+		System.out.println("askPrice bid: " +  Math.round(bid));	
+		
 		return (long) Math.round(bid);
 	}
 
@@ -178,7 +168,11 @@ public class MyAuction implements AuctionBehavior {
 		if(!sameTasks(tasks)) {
 			throw new RuntimeException("Provided tasks is not the same as wonAndPendingTasks");
 		}
-
+		if (currentSolution == null) {
+			currentSolution = new Solution(vehicles, tasks);
+		}
+		currentSolution.updateTasks(tasks);
+		
 		return currentSolution.getJointPlan();
 	}
 
@@ -204,10 +198,23 @@ public class MyAuction implements AuctionBehavior {
 	 * Check whether tasks is the same as wonAndPendingTasks
 	 */
 	private boolean sameTasks(TaskSet tasks) {
-		if(!wonAndPendingTasks.containsAll(tasks)) {
+		if(wonAndPendingTasks.size() != tasks.size()) {
 			return false;
 		}
-		return tasks.containsAll(wonAndPendingTasks);
+		for(Task task1 : tasks) {
+			boolean found = false;
+			for(Task task2 : wonAndPendingTasks) {
+				if(task1.id == task2.id) {
+					found = true;
+					break;
+				}
+			}
+			if(found == false) {
+				return false;
+			}
+		}
+		return true;
+		
 	}
 
 }

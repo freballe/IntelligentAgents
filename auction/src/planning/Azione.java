@@ -22,6 +22,10 @@ class Azione {
 	Task getTask() {
 		return task;
 	}
+	
+	void setTask(Task newTask) {
+		task = newTask;
+	}
 
 
 	Type getType() {
