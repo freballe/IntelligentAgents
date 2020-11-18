@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Set;
 
 import logist.simulation.Vehicle;
 import logist.task.Task;
@@ -41,11 +40,15 @@ public class Planner {
 	 * Implements an epsilon-greedy (with decreasing epsilon) SLS.
 	 * @return the best joint plan found.
 	 */
-	public Solution plan(Set<Task> tasks, double epsilon, long timeout){
+	public Solution plan(Solution pastSolution, Task newTask, double epsilon, long timeout){
 		long startTime = System.currentTimeMillis();
 		long elapsedTime = 0L;
-		Solution currentSolution = new Solution(vehicles, tasks);
+		Solution currentSolution;
 		Solution bestSolution;
+		
+		// Initialise currentSolution
+		currentSolution = new Solution(pastSolution);
+		currentSolution.addTask(newTask);
 		
 		// Randomise currentSolution
 		for(int i = 0; i < NUMRANDOMISE; i++) {

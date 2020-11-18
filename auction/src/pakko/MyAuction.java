@@ -63,14 +63,10 @@ public class MyAuction implements AuctionBehavior {
 
 		// The bid method cannot execute more than timeoutBid milliseconds
 		this.timeoutBid = ls.get(LogistSettings.TimeoutKey.BID);
-
 		// Reads the user-chosen timeout margin from the configuration file
-		Long timeoutMarginName = agent.readProperty("timeout-margin", Long.class, 100L);
-		this.timeoutMargin = timeoutMarginName.longValue();
-
+		this.timeoutMargin = agent.readProperty("timeout-margin", Long.class, 100L);
 		// Reads the user-chosen epsilon parameter from the configuration file
-		Double epsilonName = agent.readProperty("epsilon", Double.class, 0.2);
-		this.epsilon = epsilonName.doubleValue();
+		this.epsilon = agent.readProperty("epsilon", Double.class, 0.2);
 
 		this.topology = topology;
 		this.distribution = distribution;
@@ -79,7 +75,7 @@ public class MyAuction implements AuctionBehavior {
 		this.planner = new Planner(this.vehicles);
 
 		this.wonAndPendingTasks = new HashSet<Task>();
-		this.currentSolution = null;
+		this.currentSolution = new Solution(vehicles);	// Empty solution
 		this.pendingTask = null;
 		this.pendingSolution = null;
 		
@@ -112,6 +108,7 @@ public class MyAuction implements AuctionBehavior {
 		pendingTask = null;
 		pendingSolution = null;
 		
+		// Inform the prezzer
 		prezzer.auctionResult(previous, winner, bids);
 		
 		return;
@@ -142,10 +139,10 @@ public class MyAuction implements AuctionBehavior {
 			return null;
 		}
 
-		// Compute plan when accepting task
+		// Compute plan for accepting task
 		pendingTask = task;
 		wonAndPendingTasks.add(task);
-		pendingSolution = planner.plan(wonAndPendingTasks, epsilon, timeoutBid-timeoutMargin);
+		pendingSolution = planner.plan(currentSolution, task, epsilon, timeoutBid-timeoutMargin);
 
 		// Compute marginal cost
 		double marginalCost = pendingSolution.getCost() - currentCost;

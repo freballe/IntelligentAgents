@@ -40,16 +40,62 @@ public class Solution {
 	static {
 		logger.setLevel(LOGLEVEL);
 	}
-	
+
 
 	/* CONSTRUCTORS */
 
 
-	/**
-	 * Constructs an initial solution.
-	 * @param vehicles: the list of vehicles, whose order matters
-	 * @param tasks: the tasks to assign
-	 */
+	public Solution(List<Vehicle> vehicles) {
+		this.vehicles = vehicles;
+		this.firstActions = new HashMap<Vehicle, Node<Azione>>();
+		this.nTasks = new HashMap<Vehicle, Integer>();
+		this.totalTasks = 0;
+		this.coin = new Random(15);
+
+		// Fill firstActions with null, and nTasks with 0, for each vehicle
+		for(Vehicle vehicle : vehicles) {
+			firstActions.put(vehicle, null);
+			nTasks.put(vehicle, 0);
+		}
+
+		// Compute the cost of this solution
+		this.initCost();
+	}
+
+
+	public void addTask(Task task) {
+		Vehicle vez;
+
+		// Find random vehicle that has enough capacity
+		do {
+			// Random index in vehicles
+			int vezIndex = coin.nextInt(vehicles.size());
+			vez = vehicles.get(vezIndex);
+		} while(vez.capacity() < task.weight);	// Loops forever if no suitable vehicle exists
+
+		// Create Azioni and Nodes
+		Azione pickup = new Azione(task, Type.PICKUP);
+		Azione delivery = new Azione(task, Type.DELIVERY);
+		Node<Azione> pickupNode = new Node<Azione>(pickup);
+		Node<Azione> deliveryNode = new Node<Azione>(delivery);
+
+		// Insert pickup and delivery to the head of the list of actions
+		deliveryNode.insertBefore(firstActions.get(vez));
+		pickupNode.insertBefore(deliveryNode);
+		firstActions.put(vez, pickupNode);
+		// Increase nTasks
+		int oldNTasks = nTasks.get(vez);
+		nTasks.put(vez, oldNTasks+1);
+		// Increase totalTasks
+		totalTasks++;
+		
+		// Update cost
+		this.initCost();
+		
+		return;
+	}
+
+
 	public Solution(List<Vehicle> vehicles, Set<Task> tasks) {
 		this.vehicles = vehicles;
 		this.firstActions = new HashMap<Vehicle, Node<Azione>>();
@@ -67,7 +113,6 @@ public class Solution {
 		Iterator<Vehicle> vezIter = vehicles.iterator();
 		for(Task task : tasks) {
 			Vehicle vez;
-			int oldNTasks;
 
 			// Find first vehicle (from where you left) that has enough capacity
 			do {
@@ -88,7 +133,7 @@ public class Solution {
 			pickupNode.insertBefore(deliveryNode);
 			firstActions.put(vez, pickupNode);
 			// Increase nTasks
-			oldNTasks = nTasks.get(vez);
+			int oldNTasks = nTasks.get(vez);
 			nTasks.put(vez, oldNTasks+1);
 		}
 
@@ -105,7 +150,7 @@ public class Solution {
 	 * shallow-copied), nTasks(which is shallow-copied), and coin (which is constructed anew).
 	 * @param other: the solution to be copied.
 	 */
-	private Solution(Solution other) {
+	public Solution(Solution other) {
 		this.vehicles = other.vehicles;
 		this.firstActions = new HashMap<Vehicle, Node<Azione>>();
 		this.nTasks = new HashMap<Vehicle, Integer>();
@@ -133,13 +178,13 @@ public class Solution {
 		return;
 	}
 
-	
+
 	public void updateTasks(TaskSet tasks) {
-		Map<Integer, Task> idToNewTask = new HashMap<>();
+		Map<Integer, Task> idToNewTask = new HashMap<Integer, Task>();
 		for(Task task : tasks) {
 			idToNewTask.put(task.id, task);
 		}
-		
+
 		for(Vehicle vehicle : vehicles) {
 			Node<Azione> head = firstActions.get(vehicle);
 			if(head == null) {
@@ -151,8 +196,8 @@ public class Solution {
 				node.getElement().setTask(newTask);
 			}
 		}
-		
-		
+
+
 	}
 
 	/* SLS METHODS */	
@@ -345,7 +390,7 @@ public class Solution {
 		Solution bestSolution;
 		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
 		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
-		
+
 		if(logger.isLoggable(Level.FINE)) {
 			logger.fine("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
 			currentSolution.checkIntegrity();
@@ -497,7 +542,7 @@ public class Solution {
 			if(firstActions.get(vehicle) == null) {
 				continue;
 			}
-			
+
 			for(Node<Azione> node : firstActions.get(vehicle)) {
 				numNodes++;
 			}
@@ -517,12 +562,12 @@ public class Solution {
 		Solution currentSolution = new Solution(this);
 		Node<Azione> pickupNode = new Node<Azione>(new Azione(task, Type.PICKUP));
 		Node<Azione> deliveryNode = new Node<Azione>(new Azione(task, Type.DELIVERY));
-		
+
 		if(logger.isLoggable(Level.FINE)) {
 			logger.fine("INIZIO FINDBEST: nTotalTasks = " + currentSolution.getNumTasks());
 			currentSolution.checkIntegrity();
 		}
-		
+
 		// Unassign task from oldVeh
 		logger.fine("Unassigning task from oldVeh");
 		currentSolution.unassignTask(oldVeh, task);	// Until the end of the loop, currentSolution.nTasks is wrong
@@ -569,7 +614,7 @@ public class Solution {
 								currentSolution.isTaskPresent(task));
 						currentSolution.checkIntegrity();
 					}
-				
+
 					return currentSolution;
 				}
 
@@ -618,7 +663,7 @@ public class Solution {
 				gropponeOuter -= lastSwitchedOuter.getElement().getTask().weight;
 			}
 		}while(true);
-		
+
 		// If we haven't yet found anything, just return
 		deliveryNode.insertAfter(pickupNode);
 		currentSolution.updateNTasks();
@@ -628,7 +673,7 @@ public class Solution {
 					currentSolution.isTaskPresent(task));
 			currentSolution.checkIntegrity();
 		}
-	
+
 		return currentSolution;
 
 	}
@@ -652,7 +697,7 @@ public class Solution {
 				break;
 			}
 		}
-		
+
 		// Assert both non null
 		if(pickupNode == null) {
 			throw new RuntimeException("pickupNode = null! deliveryNode = " + deliveryNode);
@@ -660,14 +705,14 @@ public class Solution {
 		if(deliveryNode == null) {
 			throw new RuntimeException("deliveryNode = null! pickupNode = " + pickupNode);
 		}
-		
+
 		// Update firstActions
 		if(headNode == pickupNode) {
 			Node<Azione> restoredHead = pickupNode.getNext();
 			if(restoredHead == deliveryNode) {
 				restoredHead = restoredHead.getNext();
 			}
-			
+
 			this.firstActions.put(vehicle, restoredHead);
 		}
 
@@ -786,74 +831,5 @@ public class Solution {
 		}
 	}
 
-
-	/**
-	 * Computes the variation of the cost when going from the sequence of visited cities
-	 * A -> B -> C to the sequence A -> C.
-	 * @param costPerKm: the cost per unit distance of the vehicle
-	 * @param a: the first city in both sequences
-	 * @param b: the city to be removed
-	 * @param c: the city to be pulled ahead. Can be null.
-	 */
-	private void deltaCostUnhook(int costPerKm, City a, City b, City c) {
-		double delta = 0;
-
-		// If C is null, then we are just removing B from the end of the sequence
-		if(c != null) {
-			delta -= b.distanceTo(c);
-			delta += a.distanceTo(c);
-		}
-		delta -= a.distanceTo(b);
-
-		this.cost += delta * costPerKm;
-	}
-
-
-	/**
-	 * Computes the variation of the cost when going from the sequence of visited cities
-	 * A -> C to the sequence A -> B -> C.
-	 * @param costPerKm: the cost per unit distance of the vehicle
-	 * @param a: the first city in both sequences
-	 * @param b: the city to be inserted in the middle
-	 * @param c: the city to be pushed back. Can be null.
-	 */
-	private void deltaCostInsert(int costPerKm, City a, City b, City c) {
-		double delta = 0;
-
-		// If C is null, then we are just appending B at the end of the sequence
-		if(c != null) {
-			delta -= a.distanceTo(c);
-			delta += b.distanceTo(c);
-		}
-		delta += a.distanceTo(b);
-
-		this.cost += delta * costPerKm;
-	}
-
-
-	/**
-	 * Computes the variation of the cost when going from the sequence of visited cities
-	 * A -> B -> C -> D to the sequence A -> C -> B -> D.
-	 * @param costPerKm: the cost per unit distance of the vehicle
-	 * @param a: the first city in both sequences
-	 * @param b: the city to be pushed back
-	 * @param c: the city to be pulled ahead
-	 * @param d: the last city in both sequences. Can be null
-	 */
-	private void deltaCostSwap(int costPerKm, City a, City b, City c, City d) {
-		double delta = 0;
-
-		// If D is null, then we are just swapping the last two cities in the sequence
-		if(d != null) {
-			delta -= c.distanceTo(d);
-			delta += b.distanceTo(d);
-		}
-		delta -= a.distanceTo(b);
-		delta -= b.distanceTo(c);
-		delta += a.distanceTo(c);
-		delta += c.distanceTo(b);
-
-		this.cost += delta * costPerKm;
-	}
 
 }
