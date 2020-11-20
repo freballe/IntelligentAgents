@@ -65,6 +65,7 @@ public class MyCentralised implements CentralizedBehavior {
 
 	@Override
 	public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
+		System.out.println("timeoutPlan = " + timeoutPlan + ", timeoutMargn = " + timeoutMargin);
 		Planner planner = new Planner(vehicles, tasks, epsThresh, epsRate, timeoutPlan-timeoutMargin);
 		return planner.plan();
 	}

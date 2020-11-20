@@ -36,10 +36,10 @@ public class Prezzer {
 		defaultMarginalCost = agent.readProperty("def-marg-cost", Long.class, 1000L);
 		factorVehicles = agent.readProperty("vehicles-factor", Integer.class, 2);		
 		// Reads the user-chosen default marginal cost from the configuration file
-		minRatio = agent.readProperty("min-ratio", Double.class, 0.02);
-		maxRatio = agent.readProperty("max-ratio", Double.class, 0.25);
-		ratioIncreaseRate = agent.readProperty("ratio-increase", Double.class, 0.01);
-		ratioDecreaseRate = agent.readProperty("ratio-decrease", Double.class, 0.85);
+		minRatio = agent.readProperty("min-ratio", Double.class, 0.05);
+		maxRatio = agent.readProperty("max-ratio", Double.class, 0.50);
+		ratioIncreaseRate = agent.readProperty("ratio-increase", Double.class, 0.2);
+		ratioDecreaseRate = agent.readProperty("ratio-decrease", Double.class, 0.1);
 
 	}
 
@@ -61,13 +61,13 @@ public class Prezzer {
 			return;
 		}
 		if (winner == agent.id()) {
-			interestRatio += ratioIncreaseRate;
+			interestRatio *= (1 + ratioIncreaseRate);
 			if (interestRatio > maxRatio) {
 				interestRatio = maxRatio;
 			}
 		}
 		if (newBestAdversaryWonTasks > oldBestAdversaryWonTasks) {
-			interestRatio *= ratioDecreaseRate;
+			interestRatio *= (1 - ratioDecreaseRate);
 			if (interestRatio < minRatio) {
 				interestRatio = minRatio;
 			}
@@ -86,7 +86,7 @@ public class Prezzer {
 
 	public Long askPrice(double marginalCost) {
 		// Default marginal cost if <= 0
-		if(marginalCost <= 0) {
+		if(marginalCost < defaultMarginalCost) {
 			marginalCost = defaultMarginalCost;
 		}
 

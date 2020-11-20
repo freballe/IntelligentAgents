@@ -69,8 +69,9 @@ class Planner {
 		for(int nIter = 1; elapsedTime < timeout; nIter++) {
 			// Do not log all iterations
 			if(nIter % ITERSTOLOG == 0) {
-				logger.info("Iteration " + nIter + ": elapsed time = " + elapsedTime + 	", current cost = " + 
-						currentSolution.getCost() + ", best cost = " + bestSolution.getCost());
+				logger.info("Iteration " + nIter + ": elapsed time = " + elapsedTime + ", timeout = " + timeout
+						+ 	", current cost = " + currentSolution.getCost() + ", best cost = " + 
+						bestSolution.getCost());
 			}
 
 			// If too long since we found the best, reset to best
@@ -114,6 +115,8 @@ class Planner {
 			elapsedTime = System.currentTimeMillis() - startTime;
 		}
 
+		logger.info("Finished. elapsed time = " + elapsedTime + 	", current cost = " + 
+				currentSolution.getCost() + ", best cost = " + bestSolution.getCost());
 		return bestSolution.getJointPlan();
 	}
 
