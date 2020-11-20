@@ -76,11 +76,17 @@ public class Prezzer {
 
 	private int getBestAdversaryWonTasks() {
 		int maxValue = 0;
-		for(int value : nWonTasks) {
+		for(int i = 0; i < nWonTasks.length; i++) {
+			if(i == agent.id()) {
+				continue;
+			}
+			
+			int value = nWonTasks[i];
 			if(value > maxValue) {
 				maxValue = value;
 			}
 		}
+		
 		return maxValue;
 	}
 
