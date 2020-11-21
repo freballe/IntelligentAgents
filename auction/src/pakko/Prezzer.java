@@ -33,7 +33,7 @@ public class Prezzer {
 
 	void setParameters() {
 		// Reads the user-chosen default marginal cost from the configuration file
-		defaultMarginalCost = agent.readProperty("def-marg-cost", Long.class, 1000L);
+		defaultMarginalCost = agent.readProperty("def-marg-cost", Long.class, 300L);
 		factorVehicles = agent.readProperty("vehicles-factor", Integer.class, 2);		
 		// Reads the user-chosen default marginal cost from the configuration file
 		minRatio = agent.readProperty("min-ratio", Double.class, 0.05);

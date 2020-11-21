@@ -10,16 +10,6 @@
 	<agent name="auction-main-47">
 		<set class-path="bin/"/>
 		<set class-name="pakko.MyAuction"/>
-		
-		<!-- #### timeout margin ### -->
-		<set timeout-margin="250"/>
-		
-		<!-- #### epsilon-greedy strategy ### -->
-		<set epsilon="0.2"/>
-		
-		<!-- #### static auction behaiour parameters ### -->
-		<set def-marg-cost="1000"/>
-		<set gain-factor="0.05"/>
 	</agent>
 	
 </agents>

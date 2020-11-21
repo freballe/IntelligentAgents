@@ -68,9 +68,7 @@ public class Solution {
 
 		// Find random vehicle that has enough capacity
 		do {
-			// Random index in vehicles
-			int vezIndex = coin.nextInt(vehicles.size());
-			vez = vehicles.get(vezIndex);
+			vez = getRandomVehicle();
 		} while(vez.capacity() < task.weight);	// Loops forever if no suitable vehicle exists
 
 		// Create Azioni and Nodes
@@ -88,10 +86,10 @@ public class Solution {
 		nTasks.put(vez, oldNTasks+1);
 		// Increase totalTasks
 		totalTasks++;
-		
+
 		// Update cost
 		this.initCost();
-		
+
 		return;
 	}
 
@@ -255,7 +253,7 @@ public class Solution {
 
 		// Find a vehicle with at least a task
 		logger.fine("Vamos a getRandomVehicle");
-		vez = getRandomVehicle();
+		vez = getRandomVehicleByTask();
 		// Get one of its tasks a random
 		logger.fine("Vamos a getRandomTask");
 		taz = getRandomTask(vez);
@@ -301,7 +299,7 @@ public class Solution {
 
 		// Find a vehicle with at least a task
 		logger.fine("Vamos a getRandomVehicle");
-		vez = getRandomVehicle();
+		vez = getRandomVehicleByTask();
 		// Get one of its tasks a random
 		logger.fine("Vamos a getRandomTask");
 		taz = getRandomTask(vez);
@@ -324,13 +322,21 @@ public class Solution {
 	}
 
 
+	private Vehicle getRandomVehicle() {
+		// Random index in vehicles
+		int vezIndex = coin.nextInt(vehicles.size());
+		Vehicle vez = vehicles.get(vezIndex);
+		return vez;
+	}
+
+
 	/* HELPERS */
 
 
 	/**
 	 * @return a random vehicle, with probability proportional to the number of carried tasks.
 	 */
-	private Vehicle getRandomVehicle() {
+	private Vehicle getRandomVehicleByTask() {
 		// Random int between 0 ant totalTasks-1.
 		int taskNum = coin.nextInt(totalTasks);
 
