@@ -122,16 +122,13 @@ public class Prezzer {
 	}
 
 	public Long askPrice(double marginalCost) {
-		if(isFirstPhase()) {
-			if(marginalCost < 0) {
-				marginalCost = 0;
-			}
-			return Math.round(marginalCost + 1);
-		}
-		
 		// Default marginal cost if <= 0
 		if(marginalCost < defaultMarginalCost) {
 			marginalCost = defaultMarginalCost;
+		}
+
+		if(isFirstPhase()) {
+			return Math.round(marginalCost + 1);
 		}
 
 		// Compute price to ask
